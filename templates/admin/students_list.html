@@ -1,0 +1,43 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Students List{% endblock %}
+{% block header_title %}Students List{% endblock %}
+
+{% block content %}
+
+<div class="card shadow-sm border-0" style="border-radius:18px;">
+    <div class="card-header bg-white border-0">
+        <h5 class="mb-0">Total Students List</h5>
+    </div>
+
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Student Id</th>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th>Department</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                {% for s in students %}
+                <tr>
+                    <td><a href="#">{{ s.id }}</a></td>
+                    <td>{{ s.name }}</td>
+                    <td>{{ s.position }}</td>
+                    <td>{{ s.department }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.phone }}</td>
+                </tr>
+                {% endfor %}
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,492 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Manage Users{% endblock %}
+
+{% block content %}
+
+<style>
+  .users-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .users-header {
+    padding: 16px 18px;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .users-body {
+    padding: 18px;
+  }
+
+  .pill {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+  }
+
+  .pill.student {
+    background: #e3f2fd;
+    color: #0d47a1;
+  }
+
+  .pill.teacher {
+    background: #e8f5e9;
+    color: #1b5e20;
+  }
+
+  .table thead th {
+    white-space: nowrap;
+  }
+
+  .search-input {
+    max-width: 260px;
+  }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="m-0">Users</h4>
+  <div class="d-flex flex-wrap gap-2">
+    <form action="{{ url_for('admin_import_users') }}" method="post" enctype="multipart/form-data"
+      class="d-flex gap-2 align-items-center">
+      <select name="entity" class="form-select form-select-sm" style="width:150px">
+        <option value="student">Students CSV</option>
+        <option value="teacher">Teachers CSV</option>
+      </select>
+      <input type="file" name="file" accept=".csv" class="form-control form-control-sm" required style="width:240px">
+      <button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-upload"></i> Import</button>
+    </form>
+    <input type="text" class="form-control form-control-sm search-input" placeholder="Search name, email..."
+      id="globalSearch">
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+      <i class="bi bi-plus-circle"></i> Add New
+    </button>
+    {% if creds_available %}
+    <div class="btn-group">
+      <a class="btn btn-success btn-sm" href="{{ url_for('admin_download_credentials', format='csv') }}">
+        <i class="bi bi-download"></i> Download Credentials (CSV)
+      </a>
+      <button type="button" class="btn btn-success btn-sm dropdown-toggle dropdown-toggle-split"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <span class="visually-hidden">Toggle Dropdown</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{{ url_for('admin_download_credentials', format='csv') }}">CSV</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_download_credentials', format='txt') }}">Plain text</a>
+        </li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="mt-2">
+  {% for category, msg in messages %}
+  <div
+    class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show"
+    role="alert">
+    {{ msg }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="users-card">
+  <div class="users-header bg-white">
+    <ul class="nav nav-tabs" id="userTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button"
+          role="tab">Students</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="teachers-tab" data-bs-toggle="tab" data-bs-target="#teachers" type="button"
+          role="tab">Teachers</button>
+      </li>
+    </ul>
+  </div>
+
+  <div class="users-body">
+    <div class="tab-content" id="userTabsContent">
+      <!-- Students TAB -->
+      <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="studentsTable">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Class</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if students and students|length > 0 %}
+              {% for row in students %}
+              <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[5] or '-' }}</td>
+                <td>{{ row[2] or '-' }}</td>
+                <td>{{ row[6] or '-' }}</td>
+                <td>{{ row[7] or '-' }}</td>
+                <td>
+                  {% if row[8] == 1 %}
+                  <span class="badge bg-success">Active</span>
+                  {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary edit-user" title="Edit" data-bs-toggle="modal"
+                    data-bs-target="#editUserModal" data-role="student" data-id="{{ row[1]}}"
+                    data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
+                    data-phone="{{ row[7] }}" data-class="{{ row[2] }}" data-class-id="{{ row[9] }}"
+                    data-status="{{ row[8] }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
+                    <button class="btn btn-sm btn-outline-warning" title="Reset Password"
+                      onclick="return confirm('Generate a new temporary password for this user?');">
+                      <i class="bi bi-key"></i>
+                    </button>
+                  </form>
+                  <form class="d-inline" action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}"
+                    method="post">
+                    {% if row[8] == 1 %}
+                    <button class="btn btn-sm btn-outline-danger" title="Deactivate"
+                      onclick="return confirm('Deactivate this user?');">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-success" title="Activate"
+                      onclick="return confirm('Activate this user?');">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="7" class="text-muted text-center">No students found.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Teachers TAB -->
+      <div class="tab-pane fade" id="teachers" role="tabpanel" aria-labelledby="teachers-tab">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle" id="teachersTable">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Department</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% if teachers and teachers|length > 0 %}
+              {% for row in teachers %}
+              <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[5] or '-' }}</td>
+                <td>{{ row[2] or '-' }}</td>
+                <td>{{ row[6] or '-' }}</td>
+                <td>{{ row[7] or '-' }}</td>
+                <td>
+                  {% if row[8] == 1 %}
+                  <span class="badge bg-success">Active</span>
+                  {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary edit-user" title="Edit" data-bs-toggle="modal"
+                    data-bs-target="#editUserModal" data-role="teacher" data-id="{{ row[1]}}"
+                    data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
+                    data-phone="{{ row[7] }}" data-department="{{ row[2] }}" data-subject-id="{{ row[9] }}"
+                    data-status="{{ row[8] }}">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
+                    <button class="btn btn-sm btn-outline-warning" title="Reset Password"
+                      onclick="return confirm('Generate a new temporary password for this user?');">
+                      <i class="bi bi-key"></i>
+                    </button>
+                  </form>
+                  <form class="d-inline" action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}"
+                    method="post">
+                    {% if row[8] == 1 %}
+                    <button class="btn btn-sm btn-outline-danger" title="Deactivate"
+                      onclick="return confirm('Deactivate this user?');">
+                      <i class="bi bi-x-circle"></i>
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-success" title="Activate"
+                      onclick="return confirm('Activate this user?');">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                    {% endif %}
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+              {% else %}
+              <tr>
+                <td colspan="7" class="text-muted text-center">No teachers found.</td>
+              </tr>
+              {% endif %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="{{ url_for('admin_create_user_related') }}" method="post">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Role</label>
+              <select name="entity" id="addRole" class="form-select">
+                <option value="student" selected>Student</option>
+                <option value="teacher">Teacher</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="full_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" class="form-control">
+            </div>
+
+            <div class="col-md-6 student-only">
+              <label class="form-label">Class</label>
+              <select name="class_id" class="form-select">
+                <option value="">-- Select available class (optional) --</option>
+                {% if available_classes and available_classes|length > 0 %}
+                {% for c in available_classes %}
+                <option value="{{ c.class_id }}">{{ c.grade_level }} - {{ c.class_name }}</option>
+                {% endfor %}
+                {% else %}
+                <option value="" disabled>No available classes</option>
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-6 teacher-only d-none">
+              <label class="form-label">Subject</label>
+              <select name="subject_id" class="form-select">
+                <option value="">-- Select subject (optional) --</option>
+                {% if active_subjects and active_subjects|length > 0 %}
+                {% for s in active_subjects %}
+                <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+                {% endfor %}
+                {% else %}
+                <option value="" disabled>No active subjects</option>
+                {% endif %}
+              </select>
+            </div>
+
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit User</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="editUserForm" action="#" method="post">
+        <div class="modal-body">
+          <input type="hidden" id="editUserId" name="user_id">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Role</label>
+              <select id="editRole" class="form-select" disabled>
+                <option value="student">Student</option>
+                <option value="teacher">Teacher</option>
+              </select>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="editName" name="full_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" id="editEmail" name="email" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" id="editPhone" name="phone" class="form-control">
+            </div>
+
+            <div class="col-md-6 student-only-edit">
+              <label class="form-label">Class</label>
+              <select id="editClassId" name="class_id" class="form-select">
+                <option value="">-- Select class (optional) --</option>
+                {% if available_classes and available_classes|length > 0 %}
+                {% for c in available_classes %}
+                <option value="{{ c.class_id }}">{{ c.grade_level }} - {{ c.class_name }}</option>
+                {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+            <div class="col-md-6 teacher-only-edit d-none">
+              <label class="form-label">Subject</label>
+              <select id="editSubjectId" name="subject_id" class="form-select">
+                <option value="">-- Select subject (optional) --</option>
+                {% if active_subjects and active_subjects|length > 0 %}
+                {% for s in active_subjects %}
+                <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+                {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Confirm Delete</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">Are you sure you want to delete <strong id="deleteName"></strong> (<span id="deleteId"></span>)?
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bootstrap JS (for tabs and modals) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<div class="text-muted small mt-2">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for
+  teachers)</div>
+
+<script>
+  // Switch fields in Add User modal based on role
+  const addRole = document.getElementById('addRole');
+  function toggleAddRoleFields() {
+    const isTeacher = addRole.value === 'teacher';
+    document.querySelector('.student-only')?.classList.toggle('d-none', isTeacher);
+    document.querySelector('.teacher-only')?.classList.toggle('d-none', !isTeacher);
+  }
+  addRole.addEventListener('change', toggleAddRoleFields);
+  toggleAddRoleFields();
+
+  // Populate Edit modal from row buttons and set form action
+  document.querySelectorAll('.edit-user').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const role = btn.dataset.role;
+      const userId = btn.dataset.userId;
+      const isTeacher = role === 'teacher';
+
+      document.getElementById('editRole').value = role;
+      document.getElementById('editUserId').value = userId;
+
+      // Set form action URL
+      const form = document.getElementById('editUserForm');
+      form.action = `/admin/users/edit/${userId}`;
+
+      // toggle specific fields
+      document.querySelector('.student-only-edit')?.classList.toggle('d-none', isTeacher);
+      document.querySelector('.teacher-only-edit')?.classList.toggle('d-none', !isTeacher);
+
+      document.getElementById('editName').value = btn.dataset.name || '';
+      document.getElementById('editEmail').value = btn.dataset.email || '';
+      document.getElementById('editPhone').value = btn.dataset.phone || '';
+
+      if (isTeacher) {
+        // For teachers, set subject if available
+        const subjectId = btn.dataset.subjectId;
+        if (subjectId) {
+          document.getElementById('editSubjectId').value = subjectId;
+        }
+      } else {
+        // For students, set class if available
+        const classId = btn.dataset.classId;
+        if (classId) {
+          document.getElementById('editClassId').value = classId;
+        }
+      }
+    });
+  });
+
+  // Populate Delete modal text
+  document.querySelectorAll('.delete-user').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('deleteId').textContent = btn.dataset.id || '';
+      document.getElementById('deleteName').textContent = btn.dataset.name || '';
+    });
+  });
+
+  // Simple client-side search across visible tab table
+  const search = document.getElementById('globalSearch');
+  search.addEventListener('input', () => {
+    const q = search.value.toLowerCase();
+    const activeTab = document.querySelector('.tab-pane.active');
+    activeTab.querySelectorAll('tbody tr').forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+</script>
+
+{% endblock %}

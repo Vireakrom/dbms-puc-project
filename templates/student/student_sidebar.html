@@ -1,0 +1,15 @@
+<div class="sidebar">
+  <div class="user-account">
+    <img src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Student" class="user-avatar">
+    <div class="user-info">
+      <h4>Student</h4>
+      <span class="status"><i class="bi bi-circle-fill"></i> Online</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-links">
+    <a href="{{ url_for('student_dashboard') }}" class="active"><i class="bi bi-house-door"></i> Dashboard</a>
+    <a href="{{ url_for('quiz') }}"><i class="bi bi-question-circle"></i> Quiz</a>
+    <a href="{{ url_for('report') }}"><i class="bi bi-bar-chart"></i> Report</a>
+  </nav>
+</div>

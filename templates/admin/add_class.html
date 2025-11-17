@@ -1,0 +1,170 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Manage Classes{% endblock %}
+
+{% block content %}
+
+<style>
+  .form-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 24px;
+  }
+  .section-title {
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #1e293b;
+  }
+  .help-text { color: #6b7280; font-size: 0.925rem; }
+  .required::after { content: " *"; color: #ef4444; }
+  .btn-primary { background-color: #0d6efd; border: none; }
+  .btn-primary:hover { background-color: #0b5ed7; }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="m-0">Manage Classes</h4>
+  <a href="{{ url_for('admin_grade') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Back to Grades
+  </a>
+  
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mt-2">
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="form-card mb-4">
+  <h6 class="section-title">{{ 'Edit Class' if edit_class else 'Add New Class' }}</h6>
+  <form action="{{ url_for('admin_add_class') }}" method="post">
+    {% if edit_class %}
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" name="class_id" value="{{ edit_class.class_id }}">
+    {% else %}
+      <input type="hidden" name="action" value="create">
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label required">Grade Level</label>
+        <select name="grade_level" class="form-select" required>
+          <option value="" disabled {{ '' if edit_class else 'selected' }}>Select grade</option>
+          {% for g in ['7','8','9'] %}
+            <option value="{{ g }}" {% if edit_class and edit_class.grade_level==g %}selected{% endif %}>{{ g }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label required">Class Name</label>
+        <input type="text" name="class_name" class="form-control" placeholder="e.g., 7-A" value="{{ edit_class.class_name if edit_class }}" required>
+        <div class="form-text">Use a concise label (e.g., 7-A, 8-B).</div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label required">Academic Year</label>
+        <select name="academic_year" class="form-select" required>
+          <option value="" disabled {{ '' if edit_class else 'selected' }}>Select year</option>
+          {% for y in [2023, 2024, 2025, 2026] %}
+            <option value="{{ y }}" {% if edit_class and (edit_class.academic_year|string)==(y|string) %}selected{% endif %}>{{ y }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Max Students</label>
+        <input type="number" name="max_students" min="1" class="form-control" placeholder="e.g., 40" value="{{ edit_class.max_students if edit_class }}">
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      {% if edit_class %}
+        <a href="{{ url_for('admin_add_class') }}" class="btn btn-light">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Update Class
+        </button>
+      {% else %}
+        <button type="reset" class="btn btn-light">Reset</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i> Add Class
+        </button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="form-card">
+  <h6 class="section-title">Classes</h6>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Class Name</th>
+          <th>Grade</th>
+          <th>Academic Year</th>
+          <th>Max Students</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if classes and classes|length > 0 %}
+          {% for c in classes %}
+            <tr class="{% if not c.is_active %}table-light{% endif %}">
+              <td>{{ c.class_id }}</td>
+              <td>{{ c.class_name }}</td>
+              <td>{{ c.grade_level }}</td>
+              <td>{{ c.academic_year }}</td>
+              <td>{{ c.max_students or '-' }}</td>
+              <td>
+                {% if c.is_active %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{{ url_for('admin_add_class', edit_id=c.class_id) }}" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if c.is_active %}
+                  <form action="{{ url_for('admin_add_class') }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="deactivate">
+                    <input type="hidden" name="class_id" value="{{ c.class_id }}">
+                    <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Deactivate this class?');">
+                      <i class="bi bi-slash-circle"></i>
+                    </button>
+                  </form>
+                {% else %}
+                  <form action="{{ url_for('admin_add_class') }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="activate">
+                    <input type="hidden" name="class_id" value="{{ c.class_id }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="7" class="text-center text-muted">No classes yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,747 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Reports{% endblock %}
+{% block header_title %}Academic Reports & Analytics{% endblock %}
+
+{% block content %}
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    body {
+        background: #f4f6fb;
+    }
+
+    /* ===========================
+   FILTER SECTION
+=========================== */
+    .filter-section {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+    }
+
+    .filter-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .filter-select {
+        padding: 10px 16px;
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        background: #f9fafb;
+        font-size: 14px;
+        cursor: pointer;
+        min-width: 150px;
+        flex: 1;
+    }
+
+    .filter-select:hover {
+        border-color: #3b82f6;
+    }
+
+    .btn-generate {
+        background: #3b82f6;
+        color: white;
+        padding: 10px 30px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-generate:hover {
+        background: #2563eb;
+    }
+
+    .btn-export {
+        background: #10b981;
+        color: white;
+        padding: 10px 25px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .btn-export:hover {
+        background: #059669;
+    }
+
+    /* ===========================
+   SUMMARY CARDS
+=========================== */
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .summary-card {
+        background: white;
+        padding: 25px;
+        border-radius: 16px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: 0.3s;
+    }
+
+    .summary-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .summary-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 15px;
+        font-size: 28px;
+        color: white;
+    }
+
+    .summary-number {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 5px;
+    }
+
+    .summary-label {
+        font-size: 14px;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    /* ===========================
+   CHARTS SECTION
+=========================== */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 25px;
+        margin-bottom: 25px;
+    }
+
+    .chart-card {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 20px;
+        color: #1e293b;
+    }
+
+    .chart-divider {
+        width: 50px;
+        height: 3px;
+        background: #3b82f6;
+        margin: 8px 0 18px 0;
+        border-radius: 4px;
+    }
+
+    /* ===========================
+   DETAILED TABLE
+=========================== */
+    .table-section {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .search-box {
+        padding: 8px 15px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        width: 300px;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead {
+        background: #f1f5f9;
+    }
+
+    .data-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .data-table td {
+        padding: 15px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .badge {
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .badge-success {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .badge-warning {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-danger {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-info {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    /* ===========================
+   GRADE DISTRIBUTION
+=========================== */
+    .grade-distribution {
+        background: white;
+        padding: 25px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 25px;
+    }
+
+    .grade-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .grade-bar-item {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .grade-label {
+        font-weight: 600;
+        width: 80px;
+        color: #1e293b;
+    }
+
+    .grade-bar-bg {
+        flex: 1;
+        height: 30px;
+        background: #e2e8f0;
+        border-radius: 8px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .grade-bar-fill {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 10px;
+        color: white;
+        font-weight: 600;
+        font-size: 13px;
+        transition: width 0.5s ease;
+    }
+
+    .grade-count {
+        width: 60px;
+        text-align: right;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    /* ===========================
+   SECTION TITLE
+=========================== */
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 10px;
+        color: #1e293b;
+    }
+
+    /* ===========================
+   RESPONSIVE
+=========================== */
+    @media (max-width: 768px) {
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-select {
+            width: 100%;
+        }
+    }
+</style>
+
+<!-- ================= FILTER SECTION ================= -->
+<div class="filter-section">
+    <h3 class="section-title">Report Filters</h3>
+    <div class="chart-divider"></div>
+
+    <form id="reportForm">
+        <div class="filter-row">
+            <select class="filter-select" id="gradeFilter" name="grade">
+                <option value="" {% if filters.grade=='' %}selected{% endif %}>All Grades</option>
+                <option value="7" {% if filters.grade=='7' %}selected{% endif %}>Grade 7</option>
+                <option value="8" {% if filters.grade=='8' %}selected{% endif %}>Grade 8</option>
+                <option value="9" {% if filters.grade=='9' %}selected{% endif %}>Grade 9</option>
+            </select>
+
+            <select class="filter-select" id="classFilter" name="class">
+                <option value="" {% if filters.class=='' %}selected{% endif %}>All Classes</option>
+                {% for class in classes %}
+                <option value="{{ class.class_name }}" {% if filters.class==class.class_name %}selected{% endif %}>Class
+                    {{ class.class_name }}</option>
+                {% endfor %}
+            </select>
+
+            <select class="filter-select" id="subjectFilter" name="subject">
+                <option value="" {% if filters.subject=='' %}selected{% endif %}>All Subjects</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.subject_name }}" {% if filters.subject==subject.subject_name %}selected{%
+                    endif %}>{{ subject.subject_name }}</option>
+                {% endfor %}
+            </select>
+
+            <select class="filter-select" id="yearFilter" name="year">
+                <option value="2024-2025" {% if filters.year=='2024-2025' %}selected{% endif %}>Academic Year 2024-2025
+                </option>
+                <option value="2023-2024" {% if filters.year=='2023-2024' %}selected{% endif %}>Academic Year 2023-2024
+                </option>
+                <option value="2022-2023" {% if filters.year=='2022-2023' %}selected{% endif %}>Academic Year 2022-2023
+                </option>
+            </select>
+
+            <select class="filter-select" id="termFilter" name="term">
+                <option value="" {% if filters.term=='' %}selected{% endif %}>All Terms</option>
+                <option value="1" {% if filters.term=='1' %}selected{% endif %}>Term 1</option>
+                <option value="2" {% if filters.term=='2' %}selected{% endif %}>Term 2</option>
+                <option value="midterm" {% if filters.term=='midterm' %}selected{% endif %}>Midterm</option>
+                <option value="final" {% if filters.term=='final' %}selected{% endif %}>Final Exam</option>
+            </select>
+
+            <button type="button" class="btn-generate" onclick="generateReport()">
+                <i class="bi bi-bar-chart-fill"></i> Generate Report
+            </button>
+
+            <button type="button" class="btn-export" onclick="exportReport()">
+                <i class="bi bi-download"></i> Export PDF
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ================= SUMMARY CARDS ================= -->
+<div class="summary-cards">
+    <div class="summary-card">
+        <div class="summary-icon" style="background: #3b82f6;">
+            <i class="bi bi-people-fill"></i>
+        </div>
+        <div class="summary-number">{{ total_students }}</div>
+        <div class="summary-label">Total Students</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon" style="background: #10b981;">
+            <i class="bi bi-graph-up-arrow"></i>
+        </div>
+        <div class="summary-number">{{ "%.1f"|format(average_score) }}%</div>
+        <div class="summary-label">Average Score</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon" style="background: #f59e0b;">
+            <i class="bi bi-trophy-fill"></i>
+        </div>
+        <div class="summary-number">{{ top_performers }}</div>
+        <div class="summary-label">Top Performers</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon" style="background: #ef4444;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="summary-number">{{ need_support }}</div>
+        <div class="summary-label">Need Support</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon" style="background: #8b5cf6;">
+            <i class="bi bi-clipboard-check-fill"></i>
+        </div>
+        <div class="summary-number">{{ "%.1f"|format(pass_rate) }}%</div>
+        <div class="summary-label">Pass Rate</div>
+    </div>
+</div>
+
+<!-- ================= CHARTS ROW ================= -->
+<div class="charts-row">
+    <!-- Performance Trend -->
+    <div class="chart-card">
+        <h3 class="chart-title">Performance Trend</h3>
+        <div class="chart-divider"></div>
+        <div style="height: 300px; position: relative;">
+            <canvas id="performanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Subject Comparison -->
+    <div class="chart-card">
+        <h3 class="chart-title">Subject-wise Average Scores</h3>
+        <div class="chart-divider"></div>
+        <div style="height: 300px; position: relative;">
+            <canvas id="subjectChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ================= GRADE DISTRIBUTION ================= -->
+<div class="grade-distribution">
+    <h3 class="section-title">Grade Distribution</h3>
+    <div class="chart-divider"></div>
+
+    <div class="grade-bars">
+        <div class="grade-bar-item">
+            <div class="grade-label">A (90-100)</div>
+            <div class="grade-bar-bg">
+                <div class="grade-bar-fill" style="width: 28%; background: #10b981;">28%</div>
+            </div>
+            <div class="grade-count">91 students</div>
+        </div>
+
+        <div class="grade-bar-item">
+            <div class="grade-label">B (80-89)</div>
+            <div class="grade-bar-bg">
+                <div class="grade-bar-fill" style="width: 35%; background: #3b82f6;">35%</div>
+            </div>
+            <div class="grade-count">113 students</div>
+        </div>
+
+        <div class="grade-bar-item">
+            <div class="grade-label">C (70-79)</div>
+            <div class="grade-bar-bg">
+                <div class="grade-bar-fill" style="width: 22%; background: #f59e0b;">22%</div>
+            </div>
+            <div class="grade-count">71 students</div>
+        </div>
+
+        <div class="grade-bar-item">
+            <div class="grade-label">D (60-69)</div>
+            <div class="grade-bar-bg">
+                <div class="grade-bar-fill" style="width: 10%; background: #f97316;">10%</div>
+            </div>
+            <div class="grade-count">32 students</div>
+        </div>
+
+        <div class="grade-bar-item">
+            <div class="grade-label">F (0-59)</div>
+            <div class="grade-bar-bg">
+                <div class="grade-bar-fill" style="width: 5%; background: #ef4444;">5%</div>
+            </div>
+            <div class="grade-count">17 students</div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= DETAILED STUDENT RESULTS TABLE ================= -->
+<div class="table-section">
+    <div class="table-header">
+        <h3 class="section-title">Detailed Student Results</h3>
+        <input type="text" class="search-box" placeholder="🔍 Search students..." id="searchBox"
+            onkeyup="searchTable()">
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="data-table" id="resultsTable">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Class</th>
+                    <th>Subject</th>
+                    <th>Test Date</th>
+                    <th>Score</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if sample_results %}
+                {% for result in sample_results %}
+                <tr>
+                    <td>{{ result.student_id }}</td>
+                    <td>{{ result.name }}</td>
+                    <td>{{ result.class_name }}</td>
+                    <td>{{ result.subject }}</td>
+                    <td>{{ result.test_date }}</td>
+                    <td>{{ result.score }}</td>
+                    <td>{{ result.grade }}</td>
+                    <td>
+                        {% if result.score >= 90 %}
+                        <span class="badge badge-success">Excellent</span>
+                        {% elif result.score >= 80 %}
+                        <span class="badge badge-info">Good</span>
+                        {% elif result.score >= 70 %}
+                        <span class="badge badge-info">Good</span>
+                        {% elif result.score >= 60 %}
+                        <span class="badge badge-warning">Average</span>
+                        {% else %}
+                        <span class="badge badge-danger">Needs Support</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ result.remarks }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 30px; color: #64748b;">
+                        <i class="bi bi-inbox" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
+                        No test results available yet. Results will appear here once exams are graded.
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-3" style="text-align: center; color: #64748b;">
+        <p>Showing {{ sample_results|length }} of {{ total_students }} students | <a href="#"
+                style="color: #3b82f6;">Load More</a></p>
+    </div>
+</div>
+
+<script>
+    // Store chart instances to prevent multiple creations
+    let performanceChartInstance = null;
+    let subjectChartInstance = null;
+
+    // Initialize charts only once when DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        // Destroy existing chart instances if they exist
+        if (performanceChartInstance) {
+            performanceChartInstance.destroy();
+            performanceChartInstance = null;
+        }
+        if (subjectChartInstance) {
+            subjectChartInstance.destroy();
+            subjectChartInstance = null;
+        }
+
+        // Performance Trend Chart
+        const perfCtx = document.getElementById('performanceChart');
+        if (perfCtx) {
+            performanceChartInstance = new Chart(perfCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                    datasets: [
+                        {
+                            label: 'Grade 7',
+                            data: [72, 75, 78, 76, 80, 82, 85, 84],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Grade 8',
+                            data: [68, 70, 73, 74, 77, 79, 81, 83],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            fill: true
+                        },
+                        {
+                            label: 'Grade 9',
+                            data: [75, 77, 76, 79, 81, 84, 86, 88],
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.4,
+                            borderWidth: 3,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0  // Disable animation to prevent continuous redraw
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Subject Comparison Chart
+        const subjCtx = document.getElementById('subjectChart');
+        if (subjCtx) {
+            subjectChartInstance = new Chart(subjCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Math', 'English', 'Physics', 'Chemistry', 'Biology', 'ICT', 'History', 'Geography'],
+                    datasets: [{
+                        label: 'Average Score',
+                        data: [78, 82, 75, 73, 80, 85, 77, 79],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6',
+                            '#06b6d4',
+                            '#f97316',
+                            '#ec4899'
+                        ],
+                        borderRadius: 8,
+                        barThickness: 40
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: 0  // Disable animation to prevent continuous redraw
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function (value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    });
+
+    // Search Table Function
+    function searchTable() {
+        const input = document.getElementById('searchBox');
+        const filter = input.value.toLowerCase();
+        const table = document.getElementById('resultsTable');
+        const rows = table.getElementsByTagName('tr');
+
+        for (let i = 1; i < rows.length; i++) {
+            const cells = rows[i].getElementsByTagName('td');
+            let found = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+
+            rows[i].style.display = found ? '' : 'none';
+        }
+    }
+
+    // Generate Report Function
+    function generateReport() {
+        const grade = document.getElementById('gradeFilter').value;
+        const classVal = document.getElementById('classFilter').value;
+        const subject = document.getElementById('subjectFilter').value;
+        const year = document.getElementById('yearFilter').value;
+        const term = document.getElementById('termFilter').value;
+
+        // Build URL with query parameters
+        const params = new URLSearchParams();
+        if (grade) params.append('grade', grade);
+        if (classVal) params.append('class', classVal);
+        if (subject) params.append('subject', subject);
+        if (year) params.append('year', year);
+        if (term) params.append('term', term);
+
+        // Redirect to filtered report
+        window.location.href = '/admin/report?' + params.toString();
+    }
+
+    // Export Report Function
+    function exportReport() {
+        alert('Export to PDF functionality will be implemented soon.\nThis will generate a comprehensive PDF report with all charts and data.');
+
+        // TODO: Implement PDF export when you add the export route
+        // const params = new URLSearchParams(window.location.search);
+        // window.location.href = '/admin/report/export?format=pdf&' + params.toString();
+    }
+</script>
+
+{% endblock %}

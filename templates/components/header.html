@@ -1,0 +1,66 @@
+<style>
+  .header {
+    height: 60px;
+    background: #2c3e50;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 25px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, "Noto Sans", 
+                 "Liberation Sans", sans-serif;
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .brand {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    white-space: nowrap;
+  }
+
+  .header-left h4 {
+    margin: 0;
+    font-weight: 600;
+    color: #ecf0f1;
+  }
+
+  .header-right i {
+    font-size: 20px;
+    margin-left: 15px;
+    cursor: pointer;
+    color: #ecf0f1;
+    transition: color 0.2s ease;
+  }
+
+  .header-right i:hover {
+    color: #00a8ff;
+  }
+</style>
+
+<div class="header">
+
+  <div class="header-left">
+    <div class="brand">TeachTracker LMS</div>
+    <h4>{{ title }}</h4>
+  </div>
+
+  <div class="header-right">
+    <i class="bi bi-bell"></i>
+    <i class="bi bi-gear"></i>
+    <a href="{{ url_for('logout') }}" style="color:#00a8ff; text-decoration:none;">
+      <i class="bi bi-box-arrow-right"></i>
+    </a>
+  </div>
+
+</div>
