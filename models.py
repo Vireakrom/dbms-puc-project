@@ -61,6 +61,38 @@ class Subject(db.Model):
     is_active = db.Column(db.Integer, default=1)
 
 
+<<<<<<< HEAD
+=======
+# TODO: Add Test/Exam Results models for the report functionality
+# Example structure for future implementation:
+#
+# class Test(db.Model):
+#     __tablename__ = 'tests'
+#     test_id = db.Column(db.Integer, primary_key=True)
+#     test_name = db.Column(db.String(100), nullable=False)
+#     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.subject_id'))
+#     class_id = db.Column(db.Integer, db.ForeignKey('classes.class_id'))
+#     test_date = db.Column(db.Date)
+#     total_marks = db.Column(db.Integer)
+#     duration_minutes = db.Column(db.Integer)
+#     term = db.Column(db.String(20))  # 'Term 1', 'Term 2', 'Midterm', 'Final'
+#     is_active = db.Column(db.Integer, default=1)
+#
+# class TestResult(db.Model):
+#     __tablename__ = 'test_results'
+#     result_id = db.Column(db.Integer, primary_key=True)
+#     test_id = db.Column(db.Integer, db.ForeignKey('tests.test_id'), nullable=False)
+#     student_id = db.Column(db.Integer, db.ForeignKey('students.student_id'), nullable=False)
+#     marks_obtained = db.Column(db.Integer)
+#     percentage = db.Column(db.Float)
+#     grade = db.Column(db.String(2))  # A, B, C, D, F
+#     remarks = db.Column(db.Text)
+#     submitted_at = db.Column(db.DateTime)
+#     graded_at = db.Column(db.DateTime)
+#     graded_by = db.Column(db.Integer, db.ForeignKey('teachers.teacher_id'))
+
+
+>>>>>>> 67b00c61d8f34daa5ee66916e2c582838a577f9d
 def init_app(app):
     # Build DB URI from env, fallback to mysql settings in db.py
     db_user = os.environ.get('DB_USER', 'root')
