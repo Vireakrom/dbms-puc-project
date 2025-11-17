@@ -1,0 +1,208 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Examination{% endblock %}
+{% block header_title %}Examination{% endblock %}
+
+{% block content %}
+
+<div class="mb-3">
+    <a href="{{ url_for('manage_grades') }}"
+       class="btn btn-sm d-inline-flex align-items-center rounded-pill px-3 py-1"
+       style="background:#2d3e50; color:white;">
+        <i class="bi bi-arrow-left-circle me-1" style="font-size:16px;"></i>
+        Back
+    </a>
+</div>
+
+<div class="form-wrapper">
+
+    <div class="form-card">
+
+        <h3 class="form-title" style="text-align:center;width:100%;">Examination</h3>
+        <p class="form-subtitle">Fill in the details to schedule a new examination.</p>
+
+        <form method="POST">
+
+            <!-- GRADE + CLASS -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Select Grade</label>
+                    <select id="gradeSelect" class="form-select input-style">
+                        <option selected disabled>Choose Grade</option>
+                        <option value="7">Grade 7</option>
+                        <option value="8">Grade 8</option>
+                        <option value="9">Grade 9</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Select Class</label>
+                    <select class="form-select input-style">
+                        <option selected disabled>Choose Class</option>
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                        <option>D</option>
+                        <option>E</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SUBJECT FIELD -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Subject</label>
+                
+                <div class="input-group">
+                    <span class="input-group-text" style="background:#e7efff;">
+                        <i class="bi bi-journal-bookmark" style="color:black;"></i>
+                    </span>
+
+                    <select id="subjectSelect" class="form-select input-style">
+                        <option selected disabled>Select Subject</option>
+
+                        <!-- Grade 7 Subjects -->
+                        <optgroup label="Grade 7 Subjects" class="subject-group grade-7">
+                            <option>ICT</option>
+                            <option>Mathematics (Maths)</option>
+                            <option>Khmer Language</option>
+                            <option>English</option>
+                            <option>Physics</option>
+                            <option>Chemistry</option>
+                            <option>Biology</option>
+                            <option>Earth Science</option>
+                            <option>History</option>
+                            <option>Geography</option>
+                            <option>Civics / Morality</option>
+                            <option>Physical Education</option>
+                        </optgroup>
+
+                        <!-- Grade 8 Subjects -->
+                        <optgroup label="Grade 8 Subjects" class="subject-group grade-8">
+                            <option>ICT</option>
+                            <option>Mathematics (Maths)</option>
+                            <option>Khmer Language</option>
+                            <option>English</option>
+                            <option>Physics</option>
+                            <option>Chemistry</option>
+                            <option>Biology</option>
+                            <option>Earth Science</option>
+                            <option>History</option>
+                            <option>Geography</option>
+                            <option>Civics / Morality</option>
+                            <option>Physical Education</option>
+                        </optgroup>
+
+                        <!-- Grade 9 Subjects -->
+                        <optgroup label="Grade 9 Subjects" class="subject-group grade-9">
+                            <option>ICT</option>
+                            <option>Mathematics (Maths)</option>
+                            <option>Khmer Language</option>
+                            <option>English</option>
+                            <option>Physics</option>
+                            <option>Chemistry</option>
+                            <option>Biology</option>
+                            <option>Earth Science</option>
+                            <option>History</option>
+                            <option>Geography</option>
+                            <option>Civics / Morality</option>
+                            <option>Physical Education</option>
+                        </optgroup>
+
+                    </select>
+                </div>
+            </div>
+
+            <!-- EXAM TYPE + CATEGORY -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Examination Type</label>
+                    <select class="form-select input-style">
+                        <option selected disabled>Choose Type</option>
+                        <option>QCM</option>
+                        <option>Short Answer</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Examination Category</label>
+                    <select class="form-select input-style">
+                        <option selected disabled>Select Category</option>
+                        <option>Quiz</option>
+                        <option>Midterm</option>
+                        <option>Final Exam</option>
+                        <option>Homework</option>
+                        <option>Fun Quiz</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- DATE -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Scheduled Date</label>
+                <input type="date" class="form-control input-style">
+            </div>
+
+            <!-- DESCRIPTION -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Description (Optional)</label>
+                <textarea class="form-control input-style" rows="4"></textarea>
+            </div>
+
+            <!-- BUTTONS -->
+            <div class="text-center mt-4">
+                <a href="{{ url_for('manage_grades') }}" 
+                   class="btn me-2"
+                   style="background:#e63946; color:white; padding:10px 20px; border-radius:10px; font-weight:600;">
+                   Cancel
+                </a>
+
+                <button class="btn"
+                        style="background:#0097e6; color:white; padding:10px 20px; border-radius:10px; font-weight:600;">
+                    Create
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<style>
+.form-wrapper { display: flex; justify-content: center; }
+
+.form-card {
+    background: white; 
+    width: 65%; 
+    padding: 30px;
+    border-radius: 16px; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.form-title { font-size: 26px; font-weight: 700; }
+
+.form-subtitle { margin-top: -5px; margin-bottom: 20px; color: #6b7280; }
+
+.input-style { 
+    border-radius: 10px; 
+    padding: 10px 12px; 
+}
+
+.subject-group { display: none; }
+</style>
+
+<script>
+/* Auto show subject list based on selected grade */
+document.getElementById("gradeSelect").addEventListener("change", function () {
+    let grade = this.value;
+
+    document.querySelectorAll(".subject-group").forEach(group => {
+        group.style.display = "none";
+    });
+
+    let selectedGroup = document.querySelector(".grade-" + grade);
+    if (selectedGroup) selectedGroup.style.display = "block";
+});
+</script>
+
+{% endblock %}

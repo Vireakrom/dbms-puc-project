@@ -1,0 +1,142 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Manage Subjects{% endblock %}
+
+{% block content %}
+
+<style>
+  .form-card {
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 24px;
+  }
+  .section-title { font-weight: 700; margin-bottom: 14px; color: #1e293b; }
+  .required::after { content: " *"; color: #ef4444; }
+  .btn-primary { background-color: #0d6efd; border: none; }
+  .btn-primary:hover { background-color: #0b5ed7; }
+  .desc-cell { max-width: 420px; }
+  .desc-cell .truncate { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  textarea.form-control { min-height: 100px; }
+</style>
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="m-0">Manage Subjects</h4>
+  <a href="{{ url_for('admin_grade') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left"></i> Back to Grades
+  </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mt-2">
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<div class="form-card mb-4">
+  <h6 class="section-title">{{ 'Edit Subject' if edit_subject else 'Add New Subject' }}</h6>
+  <form action="{{ url_for('admin_add_subject') }}" method="post">
+    {% if edit_subject %}
+      <input type="hidden" name="action" value="update">
+      <input type="hidden" name="subject_id" value="{{ edit_subject.subject_id }}">
+    {% else %}
+      <input type="hidden" name="action" value="create">
+    {% endif %}
+
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label required">Subject Name</label>
+        <input type="text" name="subject_name" class="form-control" placeholder="e.g., Mathematics" value="{{ edit_subject.subject_name if edit_subject }}" required>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label">Description</label>
+        <textarea name="description" class="form-control" placeholder="Optional description for the subject">{{ edit_subject.description if edit_subject }}</textarea>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      {% if edit_subject %}
+        <a href="{{ url_for('admin_add_subject') }}" class="btn btn-light">Cancel</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-save"></i> Update Subject
+        </button>
+      {% else %}
+        <button type="reset" class="btn btn-light">Reset</button>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i> Add Subject
+        </button>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="form-card">
+  <h6 class="section-title">Subjects</h6>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Subject Name</th>
+          <th class="desc-cell">Description</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if subjects and subjects|length > 0 %}
+          {% for s in subjects %}
+            <tr class="{% if not s.is_active %}table-light{% endif %}">
+              <td>{{ s.subject_id }}</td>
+              <td>{{ s.subject_name }}</td>
+              <td class="desc-cell"><span class="truncate">{{ s.description or '-' }}</span></td>
+              <td>
+                {% if s.is_active %}
+                  <span class="badge bg-success">Active</span>
+                {% else %}
+                  <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="text-end">
+                <a href="{{ url_for('admin_add_subject', edit_id=s.subject_id) }}" class="btn btn-outline-primary btn-sm">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                {% if s.is_active %}
+                  <form action="{{ url_for('admin_add_subject') }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="deactivate">
+                    <input type="hidden" name="subject_id" value="{{ s.subject_id }}">
+                    <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Deactivate this subject?');">
+                      <i class="bi bi-slash-circle"></i>
+                    </button>
+                  </form>
+                {% else %}
+                  <form action="{{ url_for('admin_add_subject') }}" method="post" class="d-inline">
+                    <input type="hidden" name="action" value="activate">
+                    <input type="hidden" name="subject_id" value="{{ s.subject_id }}">
+                    <button type="submit" class="btn btn-outline-success btn-sm">
+                      <i class="bi bi-check-circle"></i>
+                    </button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" class="text-center text-muted">No subjects yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Test Results - Grade {{ grade }} {{ class_name }}{% endblock %}
+{% block header_title %}Results for Grade {{ grade }} - Class {{ class_name }}{% endblock %}
+
+{% block content %}
+
+<!-- BACK BUTTON -->
+<div class="mb-3">
+    <a href="{{ url_for('manage_grades') }}"
+       class="btn btn-sm d-inline-flex align-items-center rounded-pill px-3 py-1"
+       style="background:#2d3e50; color:white;">
+        <i class="bi bi-arrow-left-circle me-1" style="font-size:16px;"></i>
+        Back
+    </a>
+</div>
+
+<!-- FILTER ROW -->
+<div class="mb-4 d-flex justify-content-end gap-2">
+
+    <!-- FILTER: YEAR -->
+    <select id="yearFilter" class="form-select" style="width:150px; border-radius:8px;">
+        <option value="all">All Years</option>
+        <option value="2023">2023</option>
+        <option value="2024">2024</option>
+        <option value="2025">2025</option>
+    </select>
+
+    <!-- FILTER: GRADE -->
+    <select id="gradeFilter" class="form-select" style="width:140px; border-radius:8px;">
+        <option value="all">All Grades</option>
+        <option value="7">Grade 7</option>
+        <option value="8">Grade 8</option>
+        <option value="9">Grade 9</option>
+    </select>
+
+    <!-- FILTER: CLASS -->
+    <select id="classFilter" class="form-select" style="width:140px; border-radius:8px;">
+        <option value="all">All Classes</option>
+        <option value="A">Class A</option>
+        <option value="B">Class B</option>
+        <option value="C">Class C</option>
+        <option value="D">Class D</option>
+        <option value="E">Class E</option>
+    </select>
+
+    <!-- FILTER: SUBJECT -->
+    <select id="subjectFilter" class="form-select" style="width:240px; border-radius:8px;">
+        <option value="all">All Subjects</option>
+        <option value="ict">ICT</option>
+        <option value="math">Mathematics (Maths)</option>
+        <option value="khmer">Khmer Language</option>
+        <option value="english">English</option>
+        <option value="physics">Physics</option>
+        <option value="chemistry">Chemistry</option>
+        <option value="biology">Biology</option>
+        <option value="earth">Earth Science</option>
+        <option value="history">History</option>
+        <option value="geography">Geography</option>
+        <option value="civics">Civics / Morality</option>
+        <option value="pe">Physical Education (PE)</option>
+    </select>
+
+</div>
+
+<!-- RESULTS CARD -->
+<div class="results-wrapper">
+    <div class="results-card">
+
+        <h2 class="text-center fw-bold mb-2">Test Results</h2>
+
+        <p class="text-center mb-1">
+            <b>Grade:</b> {{ grade }} &nbsp; | &nbsp;
+            <b>Class:</b> {{ class_name }}
+        </p>
+
+        <hr>
+
+        <table class="table table-bordered text-center align-middle" id="resultsTable">
+            <thead class="results-header">
+                <tr>
+                    <th>#</th>
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    <th>Quiz 10%</th>
+                    <th>Assignment 20%</th>
+                    <th>Midterm 30%</th>
+                    <th>Final 40%</th>
+                    <th>Total</th>
+                    <th>Grade</th>
+                    <th>Teacher</th>
+                    <th>Subject</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <!-- SAMPLE ROWS (replace later with dynamic loop) -->
+                <tr data-year="2025" data-grade="7" data-class="A" data-subject="math">
+                    <td>1</td>
+                    <td>STU-001</td>
+                    <td>Sok Dara</td>
+                    <td>9.5</td>
+                    <td>18.5</td>
+                    <td>26.0</td>
+                    <td>33.0</td>
+                    <td><b>87%</b></td>
+                    <td>A</td>
+                    <td>Mr. John</td>
+                    <td>Mathematics</td>
+                </tr>
+
+                <tr data-year="2025" data-grade="7" data-class="A" data-subject="science">
+                    <td>2</td>
+                    <td>STU-002</td>
+                    <td>Sok Chan</td>
+                    <td>10</td>
+                    <td>19</td>
+                    <td>25.5</td>
+                    <td>35.0</td>
+                    <td><b>89%</b></td>
+                    <td>A</td>
+                    <td>Mr. John</td>
+                    <td>Science</td>
+                </tr>
+
+                <tr data-year="2025" data-grade="7" data-class="A" data-subject="english">
+                    <td>3</td>
+                    <td>STU-003</td>
+                    <td>Rina Pov</td>
+                    <td>9</td>
+                    <td>17</td>
+                    <td>24</td>
+                    <td>32</td>
+                    <td><b>82%</b></td>
+                    <td>B</td>
+                    <td>Mr. John</td>
+                    <td>English</td>
+                </tr>
+
+            </tbody>
+        </table>
+
+    </div>
+</div>
+
+<style>
+.results-wrapper {
+    display: flex;
+    justify-content: center;
+}
+
+.results-card {
+    background: white;
+    width: 92%;
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+
+/* Dark navy header */
+.results-header th {
+    background: #2c3e50;
+    color: white;
+    font-weight: 700;
+    padding: 12px;
+    border-right: 1px solid white;
+}
+
+.results-header th:last-child {
+    border-right: none;
+}
+
+.results-card td, .results-card th {
+    border: 1px solid #dcdcdc;
+    padding: 10px;
+}
+</style>
+
+<!-- MULTI-FILTER SCRIPT -->
+<script>
+function applyFilters() {
+    let year = document.getElementById("yearFilter").value;
+    let grade = document.getElementById("gradeFilter").value;
+    let className = document.getElementById("classFilter").value;
+    let subject = document.getElementById("subjectFilter").value;
+
+    let rows = document.querySelectorAll("#resultsTable tbody tr");
+
+    rows.forEach(row => {
+        let rowYear = row.getAttribute("data-year");
+        let rowGrade = row.getAttribute("data-grade");
+        let rowClass = row.getAttribute("data-class");
+        let rowSubject = row.getAttribute("data-subject");
+
+        let show =
+            (year === "all" || year === rowYear) &&
+            (grade === "all" || grade === rowGrade) &&
+            (className === "all" || className === rowClass) &&
+            (subject === "all" || subject === rowSubject);
+
+        row.style.display = show ? "" : "none";
+    });
+}
+
+// Attach events
+document.getElementById("yearFilter").addEventListener("change", applyFilters);
+document.getElementById("gradeFilter").addEventListener("change", applyFilters);
+document.getElementById("classFilter").addEventListener("change", applyFilters);
+document.getElementById("subjectFilter").addEventListener("change", applyFilters);
+</script>
+
+{% endblock %}
