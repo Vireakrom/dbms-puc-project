@@ -185,7 +185,7 @@ def admin_grade():
         return redirect(url_for("login"))
     return render_template("admin/grade.html")
 
-
+#region Vireak
 @app.route("/admin/report")
 def admin_report():
     if not is_logged_in() or session.get("role_id") != 1:
@@ -271,8 +271,6 @@ def admin_report():
             'term': term_filter
         }
     )
-
-
 @app.route("/admin/add_class", methods=["GET", "POST"])
 def admin_add_class():
     if not is_logged_in() or session.get("role_id") != 1:
@@ -737,6 +735,10 @@ def admin_import_users():
     return redirect(url_for('admin_users'))
 
 
+#endregion
+
+
+
 # Minimal Roles CRUD JSON endpoints
 @app.route('/admin/roles', methods=['GET'])
 def roles_list():
@@ -784,120 +786,6 @@ def roles_delete(role_id):
         db.session.commit()
     return jsonify({"message": "deleted"})
 
-
-# Users CRUD (basic JSON endpoints)
-@app.route('/admin/users/<int:user_id>', methods=['GET'])
-def user_get(user_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        u = User.query.get_or_404(user_id)
-        return jsonify({
-            'user_id': u.user_id,
-            'username': u.username,
-            'full_name': u.full_name,
-            'email': u.email,
-            'phone': u.phone,
-            'role_id': u.role_id,
-            'is_active': u.is_active
-        })
-
-
-@app.route('/admin/users/<int:user_id>', methods=['PUT', 'PATCH'])
-def user_update(user_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        u = User.query.get_or_404(user_id)
-        u.full_name = request.form.get('full_name', u.full_name)
-        u.email = request.form.get('email', u.email)
-        u.phone = request.form.get('phone', u.phone)
-        role_id = request.form.get('role_id')
-        is_active = request.form.get('is_active')
-        if role_id:
-            try:
-                u.role_id = int(role_id)
-            except ValueError:
-                pass
-        if is_active is not None:
-            try:
-                u.is_active = int(is_active)
-            except ValueError:
-                pass
-        db.session.commit()
-    return jsonify({'message': 'updated'})
-
-
-@app.route('/admin/users/<int:user_id>', methods=['DELETE'])
-def user_delete(user_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        u = User.query.get_or_404(user_id)
-        # Also delete associated student/teacher profiles if exist
-        if hasattr(u, 'student_profile') and u.student_profile:
-            db.session.delete(u.student_profile)
-        if hasattr(u, 'teacher_profile') and u.teacher_profile:
-            db.session.delete(u.teacher_profile)
-        db.session.delete(u)
-        db.session.commit()
-    return jsonify({'message': 'deleted'})
-
-
-# Students CRUD (update/delete)
-@app.route('/admin/students/<int:student_id>', methods=['PUT', 'PATCH'])
-def student_update(student_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        s = Student.query.get_or_404(student_id)
-        class_id = request.form.get('class_id')
-        if class_id is not None:
-            try:
-                s.class_id = int(class_id)
-            except ValueError:
-                pass
-        db.session.commit()
-    return jsonify({'message': 'updated'})
-
-
-@app.route('/admin/students/<int:student_id>', methods=['DELETE'])
-def student_delete(student_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        s = Student.query.get_or_404(student_id)
-        db.session.delete(s)
-        db.session.commit()
-    return jsonify({'message': 'deleted'})
-
-
-# Teachers CRUD (update/delete)
-@app.route('/admin/teachers/<int:teacher_id>', methods=['PUT', 'PATCH'])
-def teacher_update(teacher_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        t = Teacher.query.get_or_404(teacher_id)
-        subject_id = request.form.get('subject_id')
-        if subject_id is not None:
-            try:
-                t.subject_id = int(subject_id)
-            except ValueError:
-                pass
-        db.session.commit()
-    return jsonify({'message': 'updated'})
-
-
-@app.route('/admin/teachers/<int:teacher_id>', methods=['DELETE'])
-def teacher_delete(teacher_id):
-    if not is_logged_in() or session.get('role_id') != 1:
-        return redirect(url_for('login'))
-    with app.app_context():
-        t = Teacher.query.get_or_404(teacher_id)
-        db.session.delete(t)
-        db.session.commit()
-    return jsonify({'message': 'deleted'})
 
 
 @app.route("/teacher")
