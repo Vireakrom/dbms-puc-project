@@ -74,23 +74,4 @@ def init_app(app):
     db.init_app(app)
 
 
-def ensure_schema(app):
-    # Ensure columns needed by new features exist in existing DB
-    with app.app_context():
-        inspector = inspect(db.engine)
-        cols = [c['name'] for c in inspector.get_columns('users')]
-        if 'force_password_change' not in cols:
-            # Add column safely
-            with db.engine.connect() as conn:
-                conn.execute(text('ALTER TABLE users ADD COLUMN force_password_change TINYINT DEFAULT 0'))
-        # Ensure basic roles exist
-        try:
-            if Role.query.count() == 0:
-                db.session.add_all([
-                    Role(role_id=1, role_name='Admin'),
-                    Role(role_id=2, role_name='Teacher'),
-                    Role(role_id=3, role_name='Student'),
-                ])
-                db.session.commit()
-        except Exception:
-            db.session.rollback()
+

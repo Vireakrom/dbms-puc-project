@@ -83,14 +83,12 @@
 
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="mt-2">
+<div class="mt-2 mb-3" id="flashMessages">
   {% for category, msg in messages %}
-  <div
-    class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show"
-    role="alert">
+  <p class="mb-1 text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} flash-message" style="transition: opacity 0.5s ease-out;">
+    <i class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill"></i>
     {{ msg }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-  </div>
+  </p>
   {% endfor %}
 </div>
 {% endif %}
@@ -157,20 +155,15 @@
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <form class="d-inline" action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}"
-                    method="post">
-                    {% if row[8] == 1 %}
-                    <button class="btn btn-sm btn-outline-danger" title="Deactivate"
-                      onclick="return confirm('Deactivate this user?');">
-                      <i class="bi bi-x-circle"></i>
-                    </button>
-                    {% else %}
-                    <button class="btn btn-sm btn-outline-success" title="Activate"
-                      onclick="return confirm('Activate this user?');">
-                      <i class="bi bi-check-circle"></i>
-                    </button>
-                    {% endif %}
-                  </form>
+                  <button class="btn btn-sm btn-outline-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
+                    data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
+                    data-user-id="{{ row[3] }}"
+                    data-name="{{ row[5] }}"
+                    data-current-status="{{ row[8] }}"
+                    data-action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}">
+                    <i class="bi bi-{% if row[8] == 1 %}x-circle{% else %}check-circle{% endif %}"></i>
+                  </button>
                 </td>
               </tr>
               {% endfor %}
@@ -229,20 +222,15 @@
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <form class="d-inline" action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}"
-                    method="post">
-                    {% if row[8] == 1 %}
-                    <button class="btn btn-sm btn-outline-danger" title="Deactivate"
-                      onclick="return confirm('Deactivate this user?');">
-                      <i class="bi bi-x-circle"></i>
-                    </button>
-                    {% else %}
-                    <button class="btn btn-sm btn-outline-success" title="Activate"
-                      onclick="return confirm('Activate this user?');">
-                      <i class="bi bi-check-circle"></i>
-                    </button>
-                    {% endif %}
-                  </form>
+                  <button class="btn btn-sm btn-outline-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
+                    data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
+                    data-user-id="{{ row[3] }}"
+                    data-name="{{ row[5] }}"
+                    data-current-status="{{ row[8] }}"
+                    data-action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}">
+                    <i class="bi bi-{% if row[8] == 1 %}x-circle{% else %}check-circle{% endif %}"></i>
+                  </button>
                 </td>
               </tr>
               {% endfor %}
@@ -415,6 +403,46 @@
   </div>
 </div>
 
+<!-- Toggle Status Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-4" id="statusIcon"></i>
+          <span id="statusModalTitle">Confirm Action</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="toggleStatusForm" action="#" method="post">
+        <div class="modal-body pt-2">
+          <div class="alert alert-light border d-flex align-items-start gap-3" role="alert">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+            <div>
+              <p class="mb-2" id="statusMessage">
+                Are you sure you want to <strong id="statusAction">deactivate</strong>
+                <strong id="statusUserName"></strong>?
+              </p>
+              <ul class="mb-0 small text-muted" id="statusConsequences">
+                <li>This user will no longer be able to log in</li>
+                <li>You can reactivate this user at any time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+          <button type="submit" class="btn" id="statusConfirmBtn">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- Bootstrap JS (for tabs and modals) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <div class="text-muted small mt-2">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for
@@ -477,6 +505,20 @@
     });
   });
 
+  // Auto-dismiss flash messages after 5 seconds
+  const flashMessages = document.getElementById('flashMessages');
+  if (flashMessages) {
+    setTimeout(() => {
+      const messages = flashMessages.querySelectorAll('.flash-message');
+      messages.forEach(msg => {
+        msg.style.opacity = '0';
+      });
+      setTimeout(() => {
+        flashMessages.remove();
+      }, 500); // Wait for fade-out transition to complete
+    }, 5000); // Show for 5 seconds
+  }
+
   // Simple client-side search across visible tab table
   const search = document.getElementById('globalSearch');
   search.addEventListener('input', () => {
@@ -485,6 +527,54 @@
     activeTab.querySelectorAll('tbody tr').forEach(row => {
       const text = row.innerText.toLowerCase();
       row.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+
+  // Handle toggle status modal
+  document.querySelectorAll('.toggle-status-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const userName = btn.dataset.name;
+      const currentStatus = btn.dataset.currentStatus;
+      const action = btn.dataset.action;
+      const isActive = currentStatus === '1';
+
+      // Update modal content based on current status
+      const form = document.getElementById('toggleStatusForm');
+      const modalTitle = document.getElementById('statusModalTitle');
+      const statusAction = document.getElementById('statusAction');
+      const statusUserName = document.getElementById('statusUserName');
+      const statusConsequences = document.getElementById('statusConsequences');
+      const confirmBtn = document.getElementById('statusConfirmBtn');
+      const statusIcon = document.getElementById('statusIcon');
+
+      form.action = action;
+      statusUserName.textContent = userName;
+
+      if (isActive) {
+        // Deactivating
+        modalTitle.textContent = 'Deactivate User';
+        statusAction.textContent = 'deactivate';
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.innerHTML = '<i class="bi bi-x-circle"></i> Deactivate';
+        statusIcon.className = 'bi bi-exclamation-triangle-fill text-warning fs-4';
+        statusConsequences.innerHTML = `
+          <li>This user will no longer be able to log in</li>
+          <li>All their data will be preserved</li>
+          <li>You can reactivate this user at any time</li>
+        `;
+      } else {
+        // Activating
+        modalTitle.textContent = 'Activate User';
+        statusAction.textContent = 'activate';
+        confirmBtn.className = 'btn btn-success';
+        confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Activate';
+        statusIcon.className = 'bi bi-check-circle-fill text-success fs-4';
+        statusConsequences.innerHTML = `
+          <li>This user will be able to log in again</li>
+          <li>All their previous data will be accessible</li>
+          <li>They will receive their account credentials</li>
+        `;
+      }
     });
   });
 </script>

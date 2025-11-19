@@ -20,6 +20,14 @@
   .required::after { content: " *"; color: #ef4444; }
   .btn-primary { background-color: #0d6efd; border: none; }
   .btn-primary:hover { background-color: #0b5ed7; }
+  .flash-message.text-success { color: #27ae60 !important; font-weight: 600; font-size: 15px; }
+  .flash-message.text-success i { color: #27ae60 !important; }
+  .flash-message.text-danger { color: #dc3545 !important; font-weight: 600; font-size: 15px; }
+  .flash-message.text-danger i { color: #dc3545 !important; }
+  .flash-message.text-warning { color: #ff9800 !important; font-weight: 600; font-size: 15px; }
+  .flash-message.text-warning i { color: #ff9800 !important; }
+  .flash-message.text-info { color: #2196f3 !important; font-weight: 600; font-size: 15px; }
+  .flash-message.text-info i { color: #2196f3 !important; }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -31,16 +39,16 @@
 </div>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    <div class="mt-2">
-      {% for category, msg in messages %}
-        <div class="alert alert-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} alert-dismissible fade show" role="alert">
-          {{ msg }}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+{% if messages %}
+<div class="mt-2 mb-3" id="flashMessages">
+  {% for category, msg in messages %}
+  <p class="mb-1 text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} flash-message" style="transition: opacity 0.5s ease-out;">
+    <i class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill"></i>
+    {{ msg }}
+  </p>
+  {% endfor %}
+</div>
+{% endif %}
 {% endwith %}
 
 <div class="form-card mb-4">
@@ -137,23 +145,13 @@
                 <a href="{{ url_for('admin_add_class', edit_id=c.class_id) }}" class="btn btn-outline-primary btn-sm">
                   <i class="bi bi-pencil"></i>
                 </a>
-                {% if c.is_active %}
-                  <form action="{{ url_for('admin_add_class') }}" method="post" class="d-inline">
-                    <input type="hidden" name="action" value="deactivate">
-                    <input type="hidden" name="class_id" value="{{ c.class_id }}">
-                    <button type="submit" class="btn btn-outline-warning btn-sm" onclick="return confirm('Deactivate this class?');">
-                      <i class="bi bi-slash-circle"></i>
-                    </button>
-                  </form>
-                {% else %}
-                  <form action="{{ url_for('admin_add_class') }}" method="post" class="d-inline">
-                    <input type="hidden" name="action" value="activate">
-                    <input type="hidden" name="class_id" value="{{ c.class_id }}">
-                    <button type="submit" class="btn btn-outline-success btn-sm">
-                      <i class="bi bi-check-circle"></i>
-                    </button>
-                  </form>
-                {% endif %}
+                <button class="btn btn-sm btn-outline-{% if c.is_active %}danger{% else %}success{% endif %} toggle-class-status-btn"
+                  title="{% if c.is_active %}Deactivate{% else %}Activate{% endif %}"
+                  data-bs-toggle="modal" data-bs-target="#toggleClassStatusModal"
+                  data-current-status="{% if c.is_active %}1{% else %}0{% endif %}"
+                  data-action="{{ url_for('admin_add_class') }}">
+                  <i class="bi bi-{% if c.is_active %}x-circle{% else %}check-circle{% endif %}"></i>
+                </button>
               </td>
             </tr>
           {% endfor %}
@@ -166,5 +164,121 @@
     </table>
   </div>
 </div>
+
+<!-- Toggle Class Status Modal -->
+<div class="modal fade" id="toggleClassStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-4" id="classStatusIcon"></i>
+          <span id="classStatusModalTitle">Confirm Action</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="toggleClassStatusForm" action="#" method="post">
+        <input type="hidden" name="action" id="classAction" value="">
+        <input type="hidden" name="class_id" id="classId" value="">
+        <div class="modal-body pt-2">
+          <div class="alert alert-light border d-flex align-items-start gap-3" role="alert">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+            <div>
+              <p class="mb-2" id="classStatusMessage">
+                Are you sure you want to <strong id="classStatusAction">deactivate</strong>
+                <strong id="className"></strong>?
+              </p>
+              <ul class="mb-0 small text-muted" id="classStatusConsequences">
+                <li>Teachers and students will no longer see this class</li>
+                <li>You can reactivate this class at any time</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+          <button type="submit" class="btn" id="classStatusConfirmBtn">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Handle toggle class status modal
+  document.querySelectorAll('.toggle-class-status-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const classRow = btn.closest('tr');
+      const className = classRow.querySelector('td:nth-child(2)').textContent.trim();
+      const classId = btn.closest('tr').querySelector('td:first-child').textContent.trim();
+      const currentStatus = btn.dataset.currentStatus;
+      const action = btn.dataset.action;
+      const isActive = currentStatus === '1';
+
+      // Update modal content based on current status
+      const form = document.getElementById('toggleClassStatusForm');
+      const modalTitle = document.getElementById('classStatusModalTitle');
+      const statusAction = document.getElementById('classStatusAction');
+      const classNameSpan = document.getElementById('className');
+      const statusConsequences = document.getElementById('classStatusConsequences');
+      const confirmBtn = document.getElementById('classStatusConfirmBtn');
+      const statusIcon = document.getElementById('classStatusIcon');
+      const classActionInput = document.getElementById('classAction');
+      const classIdInput = document.getElementById('classId');
+
+      // Set form action and hidden inputs
+      form.action = action;
+      classIdInput.value = classId;
+      classNameSpan.textContent = className;
+
+      if (isActive) {
+        // Deactivating
+        modalTitle.textContent = 'Deactivate Class';
+        statusAction.textContent = 'deactivate';
+        classActionInput.value = 'deactivate';
+        confirmBtn.className = 'btn btn-danger';
+        confirmBtn.innerHTML = '<i class="bi bi-x-circle"></i> Deactivate';
+        statusIcon.className = 'bi bi-exclamation-triangle-fill text-warning fs-4';
+        statusConsequences.innerHTML = `
+          <li>Teachers and students will no longer see this class</li>
+          <li>All data will be preserved</li>
+          <li>You can reactivate this class at any time</li>
+        `;
+      } else {
+        // Activating
+        modalTitle.textContent = 'Activate Class';
+        statusAction.textContent = 'activate';
+        classActionInput.value = 'activate';
+        confirmBtn.className = 'btn btn-success';
+        confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Activate';
+        statusIcon.className = 'bi bi-check-circle-fill text-success fs-4';
+        statusConsequences.innerHTML = `
+          <li>This class will be visible to teachers and students</li>
+          <li>All previous data will be accessible</li>
+          <li>It can be assigned to subjects and teachers</li>
+        `;
+      }
+    });
+  });
+
+  // Auto-fade out flash messages after 5 seconds
+  const flashMessages = document.getElementById('flashMessages');
+  if (flashMessages) {
+    setTimeout(() => {
+      const messages = flashMessages.querySelectorAll('.flash-message');
+      messages.forEach(msg => {
+        msg.style.opacity = '0';
+      });
+      setTimeout(() => {
+        flashMessages.remove();
+      }, 500); // Wait for fade-out transition to complete
+    }, 5000); // Show for 5 seconds
+  }
+</script>
 
 {% endblock %}

@@ -1,12 +1,11 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash, send_file, jsonify
-from db import connect_db
 import re
 import os
 import io
 import csv
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import init_app as init_models, ensure_schema, db, User, Role, Student, Teacher, Class, Subject
+from models import init_app as init_models, db, User, Role, Student, Teacher, Class, Subject
 from sqlalchemy import func
 
 app = Flask(__name__)
@@ -14,7 +13,6 @@ app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
 
 # Initialize SQLAlchemy models and ensure required schema bits exist
 init_models(app)
-ensure_schema(app)
 
 
 def validate_username(username):
@@ -343,7 +341,7 @@ def admin_add_class():
                 if c:
                     c.is_active = 0
                     db.session.commit()
-                    flash("Class deactivated.", "warning")
+                    flash("Class deactivated.", "success")
                 else:
                     flash("Invalid class ID.", "danger")
             else:
@@ -380,92 +378,75 @@ def admin_add_subject():
     if not is_logged_in() or session.get("role_id") != 1:
         return redirect(url_for("login"))
 
-    conn = connect_db()
-    cursor = conn.cursor(dictionary=True)
+    if request.method == "POST":
+        action = request.form.get("action")
 
-    try:
-        if request.method == "POST":
-            action = request.form.get("action")
+        if action == "create":
+            subject_name = request.form.get("subject_name", "").strip()
+            description = request.form.get("description", "").strip()
 
-            if action == "create":
-                subject_name = request.form.get("subject_name", "").strip()
-                description = request.form.get("description", "").strip()
+            if not subject_name:
+                flash("Subject name is required.", "danger")
+            else:
+                new_subject = Subject(
+                    subject_name=subject_name,
+                    description=description if description else None,
+                    is_active=1,
+                )
+                db.session.add(new_subject)
+                db.session.commit()
+                flash("Subject added successfully.", "success")
 
-                if not subject_name:
-                    flash("Subject name is required.", "danger")
-                else:
-                    cursor.execute(
-                        """
-                        INSERT INTO subjects (subject_name, description, is_active)
-                        VALUES (%s, %s, 1)
-                        """,
-                        (subject_name, description if description else None)
-                    )
-                    conn.commit()
-                    flash("Subject added successfully.", "success")
+        elif action == "update":
+            subject_id = request.form.get("subject_id")
+            subject_name = request.form.get("subject_name", "").strip()
+            description = request.form.get("description", "").strip()
 
-            elif action == "update":
-                subject_id = request.form.get("subject_id")
-                subject_name = request.form.get("subject_name", "").strip()
-                description = request.form.get("description", "").strip()
+            if not subject_id:
+                flash("Invalid subject ID.", "danger")
+            elif not subject_name:
+                flash("Subject name is required.", "danger")
+            else:
+                subject = Subject.query.get(subject_id)
+                if subject:
+                    subject.subject_name = subject_name
+                    subject.description = description if description else None
+                    db.session.commit()
+                flash("Subject updated successfully.", "success")
 
-                if not subject_id:
-                    flash("Invalid subject ID.", "danger")
-                elif not subject_name:
-                    flash("Subject name is required.", "danger")
-                else:
-                    cursor.execute(
-                        """
-                        UPDATE subjects
-                        SET subject_name=%s, description=%s
-                        WHERE subject_id=%s
-                        """,
-                        (subject_name, description if description else None, subject_id)
-                    )
-                    conn.commit()
-                    flash("Subject updated successfully.", "success")
+        elif action == "deactivate":
+            subject_id = request.form.get("subject_id")
+            if subject_id:
+               subject = Subject.query.get(subject_id)
+               if subject:
+                   subject.is_active = 0
+                   db.session.commit()
+                   flash("Subject deactivated.", "success")
+            else:
+                flash("Invalid subject ID.", "danger")
 
-            elif action == "deactivate":
-                subject_id = request.form.get("subject_id")
-                if subject_id:
-                    cursor.execute("UPDATE subjects SET is_active=0 WHERE subject_id=%s", (subject_id,))
-                    conn.commit()
-                    flash("Subject deactivated.", "warning")
-                else:
-                    flash("Invalid subject ID.", "danger")
-
-            elif action == "activate":
-                subject_id = request.form.get("subject_id")
-                if subject_id:
-                    cursor.execute("UPDATE subjects SET is_active=1 WHERE subject_id=%s", (subject_id,))
-                    conn.commit()
+        elif action == "activate":
+            subject_id = request.form.get("subject_id")
+            if subject_id:
+                subject = Subject.query.get(subject_id)
+                if subject:
+                    subject.is_active = 1
+                    db.session.commit()
                     flash("Subject activated.", "success")
-                else:
-                    flash("Invalid subject ID.", "danger")
+            else:
+                flash("Invalid subject ID.", "danger")
 
-            return redirect(url_for("admin_add_subject"))
+        return redirect(url_for("admin_add_subject"))
 
-        # GET: fetch all subjects
-        cursor.execute(
-            "SELECT subject_id, subject_name, description, is_active FROM subjects ORDER BY subject_id DESC"
-        )
-        subjects = cursor.fetchall()
+    # GET: fetch all subjects
+    subjects = Subject.query.order_by(Subject.subject_id.desc()).all()
 
-        # If editing, load the specific record
-        edit_id = request.args.get("edit_id")
-        edit_subject = None
-        if edit_id:
-            cursor.execute(
-                "SELECT subject_id, subject_name, description, is_active FROM subjects WHERE subject_id=%s",
-                (edit_id,)
-            )
-            edit_subject = cursor.fetchone()
+    # If editing, load the specific record
+    edit_id = request.args.get("edit_id")
+    edit_subject = Subject.query.get(edit_id) if edit_id else None
+    return render_template("admin/add_subject.html", subjects=subjects, edit_subject=edit_subject)
 
-        return render_template("admin/add_subject.html", subjects=subjects, edit_subject=edit_subject)
 
-    finally:
-        cursor.close()
-        conn.close()
 
 
 @app.route("/admin/users")
