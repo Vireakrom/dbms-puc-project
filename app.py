@@ -363,14 +363,25 @@ def admin_add_class():
         # After POST, redirect to avoid form resubmission
         return redirect(url_for("admin_add_class"))
 
-    # GET: fetch all classes
-    classes = Class.query.order_by(Class.class_id.desc()).all()
+    # GET: fetch all classes with pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    # Ensure per_page is within reasonable limits
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+
+    classes_pagination = Class.query.order_by(Class.class_id.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     # If editing, load the specific record
     edit_id = request.args.get("edit_id")
     edit_class = Class.query.get(edit_id) if edit_id else None
 
-    return render_template("admin/add_class.html", classes=classes, edit_class=edit_class)
+    return render_template("admin/add_class.html",
+                         classes_pagination=classes_pagination,
+                         edit_class=edit_class)
 
 
 @app.route("/admin/add_subject", methods=["GET", "POST"])
@@ -438,13 +449,24 @@ def admin_add_subject():
 
         return redirect(url_for("admin_add_subject"))
 
-    # GET: fetch all subjects
-    subjects = Subject.query.order_by(Subject.subject_id.desc()).all()
+    # GET: fetch all subjects with pagination
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    # Ensure per_page is within reasonable limits
+    if per_page not in [10, 25, 50, 100]:
+        per_page = 10
+
+    subjects_pagination = Subject.query.order_by(Subject.subject_id.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
 
     # If editing, load the specific record
     edit_id = request.args.get("edit_id")
     edit_subject = Subject.query.get(edit_id) if edit_id else None
-    return render_template("admin/add_subject.html", subjects=subjects, edit_subject=edit_subject)
+    return render_template("admin/add_subject.html",
+                         subjects_pagination=subjects_pagination,
+                         edit_subject=edit_subject)
 
 
 
@@ -453,9 +475,15 @@ def admin_add_subject():
 def admin_users():
     if not is_logged_in() or session.get("role_id") != 1:
         return redirect(url_for("login"))
+
+    # Get pagination parameters
+    students_page = request.args.get('students_page', 1, type=int)
+    teachers_page = request.args.get('teachers_page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
     # Provide lists for template
     with app.app_context():
-        students = (
+        students_query = (
             Student.query
             .join(User, Student.users_user_id == User.user_id)
             .outerjoin(Class, Student.class_id == Class.class_id)
@@ -470,9 +498,11 @@ def admin_users():
                 User.is_active,
                 Student.class_id
             )
-            .all()
         )
-        teachers = (
+        students_pagination = students_query.paginate(page=students_page, per_page=per_page, error_out=False)
+        students = students_pagination.items
+
+        teachers_query = (
             Teacher.query
             .join(User, Teacher.users_user_id == User.user_id)
             .outerjoin(Subject, Teacher.subject_id == Subject.subject_id)
@@ -487,8 +517,9 @@ def admin_users():
                 User.is_active,
                 Teacher.subject_id
             )
-            .all()
         )
+        teachers_pagination = teachers_query.paginate(page=teachers_page, per_page=per_page, error_out=False)
+        teachers = teachers_pagination.items
     # Fetch available classes (active and not full) and active subjects for the Add User modal using ORM
     # Available classes: active and below capacity (or unlimited when max_students is NULL)
     student_count = func.count(Student.student_id)
@@ -515,6 +546,8 @@ def admin_users():
         "admin/user.html",
         students=students,
         teachers=teachers,
+        students_pagination=students_pagination,
+        teachers_pagination=teachers_pagination,
         creds_available=creds_available,
         available_classes=available_classes,
         active_subjects=active_subjects,
@@ -575,7 +608,8 @@ def admin_toggle_user_status(user_id):
         u.is_active = 0 if u.is_active == 1 else 1
         db.session.commit()
         status = "activated" if u.is_active == 1 else "deactivated"
-        flash(f"User {u.username} has been {status}.", "success")
+        category = "success" if u.is_active == 1 else "danger"
+        flash(f"User {u.username} has been {status}.", category)
     return redirect(url_for("admin_users"))
 
 

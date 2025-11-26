@@ -43,6 +43,109 @@
   .search-input {
     max-width: 260px;
   }
+
+  .pagination {
+    margin-bottom: 0;
+  }
+
+  .pagination .page-link {
+    color: #495057;
+    border: 1px solid #dee2e6;
+    padding: 0.375rem 0.75rem;
+  }
+
+  .pagination .page-link:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+  }
+
+  .pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
+
+  .pagination .page-item.disabled .page-link {
+    color: #6c757d;
+    pointer-events: none;
+    background-color: #fff;
+    border-color: #dee2e6;
+  }
+
+  /* Filter select styling - consistent with dashboard and grade pages */
+  .filter-select {
+    padding: 6px 16px;
+    padding-right: 2.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background-color: #f9fafb;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    appearance: none;
+  }
+
+  .filter-select:hover {
+    border-color: #3b82f6;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Action buttons filled style with hover effects */
+  .btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    color: white;
+  }
+
+  .btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #000;
+  }
+
+  .btn-warning:hover {
+    background-color: #ffca2c;
+    border-color: #ffc720;
+    color: #000;
+  }
+
+  .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background-color: #bb2d3b;
+    border-color: #b02a37;
+    color: white;
+  }
+
+  .btn-success {
+    background-color: #198754;
+    border-color: #198754;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background-color: #157347;
+    border-color: #146c43;
+    color: white;
+  }
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -50,7 +153,7 @@
   <div class="d-flex flex-wrap gap-2">
     <form action="{{ url_for('admin_import_users') }}" method="post" enctype="multipart/form-data"
       class="d-flex gap-2 align-items-center">
-      <select name="entity" class="form-select form-select-sm" style="width:150px">
+      <select name="entity" class="form-select filter-select" style="width:150px">
         <option value="student">Students CSV</option>
         <option value="teacher">Teachers CSV</option>
       </select>
@@ -81,18 +184,6 @@
   </div>
 </div>
 
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="mt-2 mb-3" id="flashMessages">
-  {% for category, msg in messages %}
-  <p class="mb-1 text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} flash-message" style="transition: opacity 0.5s ease-out;">
-    <i class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill"></i>
-    {{ msg }}
-  </p>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
 
 <div class="users-card">
   <div class="users-header bg-white">
@@ -112,6 +203,15 @@
     <div class="tab-content" id="userTabsContent">
       <!-- Students TAB -->
       <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="mb-0 fw-bold">Students List</h6>
+          <select class="form-select filter-select" id="perPageSelect" style="width:150px">
+            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10 / page</option>
+            <option value="25" {% if request.args.get('per_page', '10') == '25' %}selected{% endif %}>25 / page</option>
+            <option value="50" {% if request.args.get('per_page', '10') == '50' %}selected{% endif %}>50 / page</option>
+            <option value="100" {% if request.args.get('per_page', '10') == '100' %}selected{% endif %}>100 / page</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle" id="studentsTable">
             <thead class="table-light">
@@ -142,7 +242,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary edit-user" title="Edit" data-bs-toggle="modal"
+                  <button class="btn btn-sm btn-primary edit-user" title="Edit" data-bs-toggle="modal"
                     data-bs-target="#editUserModal" data-role="student" data-id="{{ row[1]}}"
                     data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
                     data-phone="{{ row[7] }}" data-class="{{ row[2] }}" data-class-id="{{ row[9] }}"
@@ -150,12 +250,12 @@
                     <i class="bi bi-pencil"></i>
                   </button>
                   <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
-                    <button class="btn btn-sm btn-outline-warning" title="Reset Password"
+                    <button class="btn btn-sm btn-warning" title="Reset Password"
                       onclick="return confirm('Generate a new temporary password for this user?');">
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <button class="btn btn-sm btn-outline-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                  <button class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
                     title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
                     data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
                     data-user-id="{{ row[3] }}"
@@ -175,10 +275,60 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Students Pagination -->
+        {% if students_pagination and students_pagination.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+          <div class="text-muted small">
+            Showing {{ students_pagination.per_page * (students_pagination.page - 1) + 1 }}
+            to {{ [students_pagination.per_page * students_pagination.page, students_pagination.total]|min }}
+            of {{ students_pagination.total }} students
+          </div>
+          <nav aria-label="Students pagination">
+            <ul class="pagination pagination-sm mb-0">
+              <!-- Previous Button -->
+              <li class="page-item {% if not students_pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin_users', students_page=students_pagination.prev_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_prev else '#' }}" tabindex="-1">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+
+              <!-- Page Numbers -->
+              {% for page_num in range(1, students_pagination.pages + 1) %}
+                {% if page_num == 1 or page_num == students_pagination.pages or (page_num >= students_pagination.page - 2 and page_num <= students_pagination.page + 2) %}
+                  <li class="page-item {% if page_num == students_pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin_users', students_page=page_num, teachers_page=request.args.get('teachers_page', 1)) }}">{{ page_num }}</a>
+                  </li>
+                {% elif page_num == students_pagination.page - 3 or page_num == students_pagination.page + 3 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next Button -->
+              <li class="page-item {% if not students_pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin_users', students_page=students_pagination.next_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_next else '#' }}">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
       </div>
 
       <!-- Teachers TAB -->
       <div class="tab-pane fade" id="teachers" role="tabpanel" aria-labelledby="teachers-tab">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h6 class="mb-0 fw-bold">Teachers List</h6>
+          <select class="form-select filter-select" id="perPageSelect" style="width:150px">
+            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10 / page</option>
+            <option value="25" {% if request.args.get('per_page', '10') == '25' %}selected{% endif %}>25 / page</option>
+            <option value="50" {% if request.args.get('per_page', '10') == '50' %}selected{% endif %}>50 / page</option>
+            <option value="100" {% if request.args.get('per_page', '10') == '100' %}selected{% endif %}>100 / page</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle" id="teachersTable">
             <thead class="table-light">
@@ -209,7 +359,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-outline-primary edit-user" title="Edit" data-bs-toggle="modal"
+                  <button class="btn btn-sm btn-primary edit-user" title="Edit" data-bs-toggle="modal"
                     data-bs-target="#editUserModal" data-role="teacher" data-id="{{ row[1]}}"
                     data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
                     data-phone="{{ row[7] }}" data-department="{{ row[2] }}" data-subject-id="{{ row[9] }}"
@@ -217,12 +367,12 @@
                     <i class="bi bi-pencil"></i>
                   </button>
                   <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
-                    <button class="btn btn-sm btn-outline-warning" title="Reset Password"
+                    <button class="btn btn-sm btn-warning" title="Reset Password"
                       onclick="return confirm('Generate a new temporary password for this user?');">
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <button class="btn btn-sm btn-outline-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                  <button class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
                     title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
                     data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
                     data-user-id="{{ row[3] }}"
@@ -242,6 +392,47 @@
             </tbody>
           </table>
         </div>
+
+        <!-- Teachers Pagination -->
+        {% if teachers_pagination and teachers_pagination.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+          <div class="text-muted small">
+            Showing {{ teachers_pagination.per_page * (teachers_pagination.page - 1) + 1 }}
+            to {{ [teachers_pagination.per_page * teachers_pagination.page, teachers_pagination.total]|min }}
+            of {{ teachers_pagination.total }} teachers
+          </div>
+          <nav aria-label="Teachers pagination">
+            <ul class="pagination pagination-sm mb-0">
+              <!-- Previous Button -->
+              <li class="page-item {% if not teachers_pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.prev_num) if teachers_pagination.has_prev else '#' }}" tabindex="-1">
+                  <i class="bi bi-chevron-left"></i>
+                </a>
+              </li>
+
+              <!-- Page Numbers -->
+              {% for page_num in range(1, teachers_pagination.pages + 1) %}
+                {% if page_num == 1 or page_num == teachers_pagination.pages or (page_num >= teachers_pagination.page - 2 and page_num <= teachers_pagination.page + 2) %}
+                  <li class="page-item {% if page_num == teachers_pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=page_num) }}">{{ page_num }}</a>
+                  </li>
+                {% elif page_num == teachers_pagination.page - 3 or page_num == teachers_pagination.page + 3 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+              {% endfor %}
+
+              <!-- Next Button -->
+              <li class="page-item {% if not teachers_pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.next_num) if teachers_pagination.has_next else '#' }}">
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -260,7 +451,7 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label">Role</label>
-              <select name="entity" id="addRole" class="form-select">
+              <select name="entity" id="addRole" class="form-select filter-select">
                 <option value="student" selected>Student</option>
                 <option value="teacher">Teacher</option>
               </select>
@@ -281,7 +472,7 @@
 
             <div class="col-md-6 student-only">
               <label class="form-label">Class</label>
-              <select name="class_id" class="form-select">
+              <select name="class_id" class="form-select filter-select">
                 <option value="">-- Select available class (optional) --</option>
                 {% if available_classes and available_classes|length > 0 %}
                 {% for c in available_classes %}
@@ -294,7 +485,7 @@
             </div>
             <div class="col-md-6 teacher-only d-none">
               <label class="form-label">Subject</label>
-              <select name="subject_id" class="form-select">
+              <select name="subject_id" class="form-select filter-select">
                 <option value="">-- Select subject (optional) --</option>
                 {% if active_subjects and active_subjects|length > 0 %}
                 {% for s in active_subjects %}
@@ -331,7 +522,7 @@
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label">Role</label>
-              <select id="editRole" class="form-select" disabled>
+              <select id="editRole" class="form-select filter-select" disabled>
                 <option value="student">Student</option>
                 <option value="teacher">Teacher</option>
               </select>
@@ -352,7 +543,7 @@
 
             <div class="col-md-6 student-only-edit">
               <label class="form-label">Class</label>
-              <select id="editClassId" name="class_id" class="form-select">
+              <select id="editClassId" name="class_id" class="form-select filter-select">
                 <option value="">-- Select class (optional) --</option>
                 {% if available_classes and available_classes|length > 0 %}
                 {% for c in available_classes %}
@@ -363,7 +554,7 @@
             </div>
             <div class="col-md-6 teacher-only-edit d-none">
               <label class="form-label">Subject</label>
-              <select id="editSubjectId" name="subject_id" class="form-select">
+              <select id="editSubjectId" name="subject_id" class="form-select filter-select">
                 <option value="">-- Select subject (optional) --</option>
                 {% if active_subjects and active_subjects|length > 0 %}
                 {% for s in active_subjects %}
@@ -445,8 +636,23 @@
 
 <!-- Bootstrap JS (for tabs and modals) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<div class="text-muted small mt-2">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for
-  teachers)</div>
+<div class="d-flex align-items-center gap-3 mt-2">
+  <div class="text-muted small">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for teachers)</div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div id="flashMessages" class="d-flex align-items-center gap-2">
+    {% for category, msg in messages %}
+    <span class="text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} small flash-message" style="transition: opacity 0.5s ease-out;">
+      <i class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill me-1"></i>
+      {{ msg }}
+    </span>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+</div>
 
 <script>
   // Switch fields in Add User modal based on role
@@ -459,50 +665,52 @@
   addRole.addEventListener('change', toggleAddRoleFields);
   toggleAddRoleFields();
 
-  // Populate Edit modal from row buttons and set form action
-  document.querySelectorAll('.edit-user').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const role = btn.dataset.role;
-      const userId = btn.dataset.userId;
-      const isTeacher = role === 'teacher';
+  // Populate Edit modal from row buttons and set form action - using event delegation for pagination compatibility
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.edit-user');
+    if (!btn) return;
 
-      document.getElementById('editRole').value = role;
-      document.getElementById('editUserId').value = userId;
+    const role = btn.dataset.role;
+    const userId = btn.dataset.userId;
+    const isTeacher = role === 'teacher';
 
-      // Set form action URL
-      const form = document.getElementById('editUserForm');
-      form.action = `/admin/users/edit/${userId}`;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editUserId').value = userId;
 
-      // toggle specific fields
-      document.querySelector('.student-only-edit')?.classList.toggle('d-none', isTeacher);
-      document.querySelector('.teacher-only-edit')?.classList.toggle('d-none', !isTeacher);
+    // Set form action URL
+    const form = document.getElementById('editUserForm');
+    form.action = `/admin/users/edit/${userId}`;
 
-      document.getElementById('editName').value = btn.dataset.name || '';
-      document.getElementById('editEmail').value = btn.dataset.email || '';
-      document.getElementById('editPhone').value = btn.dataset.phone || '';
+    // toggle specific fields
+    document.querySelector('.student-only-edit')?.classList.toggle('d-none', isTeacher);
+    document.querySelector('.teacher-only-edit')?.classList.toggle('d-none', !isTeacher);
 
-      if (isTeacher) {
-        // For teachers, set subject if available
-        const subjectId = btn.dataset.subjectId;
-        if (subjectId) {
-          document.getElementById('editSubjectId').value = subjectId;
-        }
-      } else {
-        // For students, set class if available
-        const classId = btn.dataset.classId;
-        if (classId) {
-          document.getElementById('editClassId').value = classId;
-        }
+    document.getElementById('editName').value = btn.dataset.name || '';
+    document.getElementById('editEmail').value = btn.dataset.email || '';
+    document.getElementById('editPhone').value = btn.dataset.phone || '';
+
+    if (isTeacher) {
+      // For teachers, set subject if available
+      const subjectId = btn.dataset.subjectId;
+      if (subjectId) {
+        document.getElementById('editSubjectId').value = subjectId;
       }
-    });
+    } else {
+      // For students, set class if available
+      const classId = btn.dataset.classId;
+      if (classId) {
+        document.getElementById('editClassId').value = classId;
+      }
+    }
   });
 
-  // Populate Delete modal text
-  document.querySelectorAll('.delete-user').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.getElementById('deleteId').textContent = btn.dataset.id || '';
-      document.getElementById('deleteName').textContent = btn.dataset.name || '';
-    });
+  // Populate Delete modal text - using event delegation for pagination compatibility
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.delete-user');
+    if (!btn) return;
+
+    document.getElementById('deleteId').textContent = btn.dataset.id || '';
+    document.getElementById('deleteName').textContent = btn.dataset.name || '';
   });
 
   // Auto-dismiss flash messages after 5 seconds
@@ -519,63 +727,85 @@
     }, 5000); // Show for 5 seconds
   }
 
+  // Handle per-page selector change
+  const perPageSelect = document.getElementById('perPageSelect');
+  perPageSelect.addEventListener('change', () => {
+    const url = new URL(window.location);
+    url.searchParams.set('per_page', perPageSelect.value);
+    url.searchParams.set('students_page', '1');
+    url.searchParams.set('teachers_page', '1');
+    window.location.href = url.toString();
+  });
+
   // Simple client-side search across visible tab table
   const search = document.getElementById('globalSearch');
   search.addEventListener('input', () => {
     const q = search.value.toLowerCase();
     const activeTab = document.querySelector('.tab-pane.active');
-    activeTab.querySelectorAll('tbody tr').forEach(row => {
+    const rows = activeTab.querySelectorAll('tbody tr');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
       const text = row.innerText.toLowerCase();
-      row.style.display = text.includes(q) ? '' : 'none';
+      const isMatch = text.includes(q);
+      row.style.display = isMatch ? '' : 'none';
+      if (isMatch) visibleCount++;
     });
+
+    // Hide pagination if search is active
+    const paginationDiv = activeTab.querySelector('.d-flex.justify-content-between.align-items-center.mt-3');
+    if (paginationDiv) {
+      paginationDiv.style.display = q ? 'none' : 'flex';
+    }
   });
 
-  // Handle toggle status modal
-  document.querySelectorAll('.toggle-status-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const userName = btn.dataset.name;
-      const currentStatus = btn.dataset.currentStatus;
-      const action = btn.dataset.action;
-      const isActive = currentStatus === '1';
+  // Handle toggle status modal - using event delegation for pagination compatibility
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.toggle-status-btn');
+    if (!btn) return;
 
-      // Update modal content based on current status
-      const form = document.getElementById('toggleStatusForm');
-      const modalTitle = document.getElementById('statusModalTitle');
-      const statusAction = document.getElementById('statusAction');
-      const statusUserName = document.getElementById('statusUserName');
-      const statusConsequences = document.getElementById('statusConsequences');
-      const confirmBtn = document.getElementById('statusConfirmBtn');
-      const statusIcon = document.getElementById('statusIcon');
+    const userName = btn.dataset.name;
+    const currentStatus = btn.dataset.currentStatus;
+    const action = btn.dataset.action;
+    const isActive = currentStatus === '1';
 
-      form.action = action;
-      statusUserName.textContent = userName;
+    // Update modal content based on current status
+    const form = document.getElementById('toggleStatusForm');
+    const modalTitle = document.getElementById('statusModalTitle');
+    const statusAction = document.getElementById('statusAction');
+    const statusUserName = document.getElementById('statusUserName');
+    const statusConsequences = document.getElementById('statusConsequences');
+    const confirmBtn = document.getElementById('statusConfirmBtn');
+    const statusIcon = document.getElementById('statusIcon');
 
-      if (isActive) {
-        // Deactivating
-        modalTitle.textContent = 'Deactivate User';
-        statusAction.textContent = 'deactivate';
-        confirmBtn.className = 'btn btn-danger';
-        confirmBtn.innerHTML = '<i class="bi bi-x-circle"></i> Deactivate';
-        statusIcon.className = 'bi bi-exclamation-triangle-fill text-warning fs-4';
-        statusConsequences.innerHTML = `
-          <li>This user will no longer be able to log in</li>
-          <li>All their data will be preserved</li>
-          <li>You can reactivate this user at any time</li>
-        `;
-      } else {
-        // Activating
-        modalTitle.textContent = 'Activate User';
-        statusAction.textContent = 'activate';
-        confirmBtn.className = 'btn btn-success';
-        confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Activate';
-        statusIcon.className = 'bi bi-check-circle-fill text-success fs-4';
-        statusConsequences.innerHTML = `
-          <li>This user will be able to log in again</li>
-          <li>All their previous data will be accessible</li>
-          <li>They will receive their account credentials</li>
-        `;
-      }
-    });
+    form.action = action;
+    statusUserName.textContent = userName;
+
+    if (isActive) {
+      // Deactivating
+      modalTitle.textContent = 'Deactivate User';
+      statusAction.textContent = 'deactivate';
+      confirmBtn.className = 'btn btn-danger';
+      confirmBtn.innerHTML = '<i class="bi bi-x-circle"></i> Deactivate';
+      statusIcon.className = 'bi bi-exclamation-triangle-fill text-warning fs-4';
+      statusConsequences.innerHTML = `
+        <li>This user will no longer be able to log in</li>
+        <li>All their data will be preserved</li>
+        <li>You can reactivate this user at any time</li>
+      `;
+    } else {
+      // Activating
+      modalTitle.textContent = 'Activate User';
+      statusAction.textContent = 'activate';
+      confirmBtn.className = 'btn btn-success';
+      confirmBtn.innerHTML = '<i class="bi bi-check-circle"></i> Activate';
+      statusIcon.className = 'bi bi-check-circle-fill text-success fs-4';
+      statusConsequences.innerHTML = `
+        <li>This user will be able to log in again</li>
+        <li>All their previous data will be accessible</li>
+        <li>They will receive their account credentials</li>
+      `;
+    }
   });
 </script>
 
