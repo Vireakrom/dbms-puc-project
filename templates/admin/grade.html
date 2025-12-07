@@ -5,398 +5,118 @@
 
 {% block content %}
 
-<!-- TOP FILTERS (teacher + year only) -->
+<!-- TOP FILTERS -->
 <div class="d-flex justify-content-end mb-4 gap-3">
-    <select class="form-select filter-select">
-        <option selected>Filter by Teacher</option>
-        <option>Teacher A</option>
-        <option>Teacher B</option>
-        <option>Teacher C</option>
+    <select id="teacherFilter" class="form-select filter-select">
+        <option value="">Filter by Teacher</option>
+        {% for t in teachers %}
+        <option value="{{ t.full_name }}">{{ t.full_name }}</option>
+        {% endfor %}
     </select>
 
-    <select class="form-select filter-select">
-        <option selected>Filter by Year</option>
-        <option>2023</option>
-        <option>2024</option>
-        <option>2025</option>
+    <select id="yearFilter" class="form-select filter-select">
+        <option value="">Filter by Year</option>
+        {% for y in years %}
+        <option value="{{ y.academic_year }}">{{ y.academic_year }}</option>
+        {% endfor %}
     </select>
 </div>
 
 <div class="grade-board">
 
-    <!-- =================== GRADE 7 =================== -->
-    <div class="grade-column">
+    {% for grade, class_list in grades.items() %}
+    <div class="grade-column" data-grade="{{ grade }}">
 
         <div class="grade-header-full mb-2">
-            <h5 class="column-title m-0 text-center w-100">Grade 7</h5>
+            <h5 class="column-title m-0 text-center w-100">Grade {{ grade }}</h5>
         </div>
 
+        <!-- Class Filter -->
         <div class="d-flex justify-content-end mb-3">
-            <select class="form-select class-filter">
-                <option selected>Class: All</option>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-                <option>E</option>
+            <select class="form-select class-filter classFilter" data-grade="{{ grade }}">
+                <option value="">Class: All</option>
+                {% for cls in class_list %}
+                <option value="{{ cls.class_name }}">{{ cls.class_name }}</option>
+                {% endfor %}
             </select>
         </div>
 
-        <!-- Class 7A -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 7A</h6>
-            <p><b>Students:</b> 45</p>
-            <p><b>Teacher:</b> Mr. John</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 12 Mar 2025</p>
+        <!-- CLASS LIST -->
+        {% for cls in class_list %}
+        <div class="grade-card class-box"
+             data-teacher="{{ cls.teacher_names }}"
+             data-year="{{ cls.academic_year }}"
+             data-class="{{ cls.class_name }}">
 
+            <div class="card-header-line"></div>
+
+            <h6 class="fw-bold mb-2">Class {{ cls.class_name }}</h6>
+            <p><b>Students:</b> {{ cls.student_count }}</p>
+
+            <p><b>Teacher:</b>
+                {% if cls.teacher_names %}
+                    {{ cls.teacher_names }}
+                {% else %}
+                    <span class="text-danger">No Teacher Assigned</span>
+                {% endif %}
+            </p>
+
+            <p><b>Status:</b>
+                {% if cls.teacher_names %}
+                    <span class="text-success fw-bold">Active</span>
+                {% else %}
+                    <span class="text-warning fw-bold">Pending</span>
+                {% endif %}
+            </p>
+
+            <p><b>Upcoming Test:</b>
+                {% if cls.next_test_date %}
+                    {{ cls.next_test_date }}
+                {% else %}
+                    Not Scheduled
+                {% endif %}
+            </p>
+
+            <!-- SUBJECTS (ONLY TEACHER SUBJECTS) -->
             <div class="subject-box mt-3">
                 <p class="fw-bold mb-2 text-center">Subjects</p>
+
                 <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
+
+                    {% if cls.teacher_subjects %}
+                        {% for sub in cls.teacher_subjects %}
+                        <span class="subject-pill subject-yellow">{{ sub }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted">No subjects assigned</span>
+                    {% endif %}
+
                 </div>
             </div>
 
+            <!-- BUTTONS -->
             <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='7', class_name='A') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
+                <a href="{{ url_for('admin_results', class_id=cls.class_id) }}" class="btn result-btn">Result</a>
+
+                <a href="{{ url_for('admin_assign_test', class_id=cls.class_id) }}" class="assign-btn text-center">Exam</a>
             </div>
+
         </div>
+        {% endfor %}
 
-        <!-- Class 7B -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 7B</h6>
-            <p><b>Students:</b> 38</p>
-            <p><b>Teacher:</b> Ms. Lina</p>
-            <p><b>Status:</b> <span class="text-warning fw-bold">Pending</span></p>
-            <p><b>Upcoming Test:</b> Not Scheduled</p>
+        <!-- ADD BUTTON -->
+        <button class="add-card-btn"
+                onclick="window.location.href='{{ url_for('admin_add_class', from_grade=1) }}'">
+            +
+        </button>
 
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='7', class_name='B') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <!-- Class 7C -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 7C</h6>
-            <p><b>Students:</b> 42</p>
-            <p><b>Teacher:</b> Mr. Andrew</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 5 Apr 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='7', class_name='C') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <button class="add-card-btn">+</button>
     </div>
-
-    <!-- =================== GRADE 8 =================== -->
-    <div class="grade-column">
-
-        <div class="grade-header-full mb-2">
-            <h5 class="column-title m-0 text-center w-100">Grade 8</h5>
-        </div>
-
-        <div class="d-flex justify-content-end mb-3">
-            <select class="form-select class-filter">
-                <option selected>Class: All</option>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-                <option>E</option>
-            </select>
-        </div>
-
-        <!-- Class 8A -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 8A</h6>
-            <p><b>Students:</b> 52</p>
-            <p><b>Teacher:</b> Mr. Kevin</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 25 Feb 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='8', class_name='A') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <!-- Class 8B -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 8B</h6>
-            <p><b>Students:</b> 41</p>
-            <p><b>Teacher:</b> Ms. Sarah</p>
-            <p><b>Status:</b> <span class="text-warning fw-bold">Ongoing</span></p>
-            <p><b>Upcoming Test:</b> 5 Apr 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='8', class_name='B') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <!-- Class 8C -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 8C</h6>
-            <p><b>Students:</b> 44</p>
-            <p><b>Teacher:</b> Mr. Ethan</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 30 Apr 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='8', class_name='C') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <button class="add-card-btn">+</button>
-    </div>
-
-    <!-- =================== GRADE 9 =================== -->
-    <div class="grade-column">
-
-        <div class="grade-header-full mb-2">
-            <h5 class="column-title m-0 text-center w-100">Grade 9</h5>
-        </div>
-
-        <div class="d-flex justify-content-end mb-3">
-            <select class="form-select class-filter">
-                <option selected>Class: All</option>
-                <option>A</option>
-                <option>B</option>
-                <option>C</option>
-                <option>D</option>
-                <option>E</option>
-            </select>
-        </div>
-
-        <!-- Class 9A -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 9A</h6>
-            <p><b>Students:</b> 47</p>
-            <p><b>Teacher:</b> Mrs. Monica</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 19 Mar 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='9', class_name='A') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <!-- Class 9B -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 9B</h6>
-            <p><b>Students:</b> 36</p>
-            <p><b>Teacher:</b> Mr. Ray</p>
-            <p><b>Status:</b> <span class="text-warning fw-bold">Pending</span></p>
-            <p><b>Upcoming Test:</b> Not Scheduled</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='9', class_name='B') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <!-- Class 9C -->
-        <div class="grade-card">
-            <div class="card-header-line"></div>
-            <h6 class="fw-bold mb-2">Class 9C</h6>
-            <p><b>Students:</b> 40</p>
-            <p><b>Teacher:</b> Mr. Leo</p>
-            <p><b>Status:</b> <span class="text-success fw-bold">Active</span></p>
-            <p><b>Upcoming Test:</b> 8 Apr 2025</p>
-
-            <div class="subject-box mt-3">
-                <p class="fw-bold mb-2 text-center">Subjects</p>
-                <div class="subject-tags justify-content-center">
-                    <span class="subject-pill subject-yellow">ICT</span>
-                    <span class="subject-pill subject-yellow">Mathematics (Maths)</span>
-                    <span class="subject-pill subject-yellow">Khmer Language</span>
-                    <span class="subject-pill subject-yellow">English</span>
-                    <span class="subject-pill subject-yellow">Physics</span>
-                    <span class="subject-pill subject-yellow">Chemistry</span>
-                    <span class="subject-pill subject-yellow">Biology</span>
-                    <span class="subject-pill subject-yellow">Earth Science</span>
-                    <span class="subject-pill subject-yellow">History</span>
-                    <span class="subject-pill subject-yellow">Geography</span>
-                    <span class="subject-pill subject-yellow">Civics / Morality</span>
-                    <span class="subject-pill subject-yellow">Physical Education</span>
-                </div>
-            </div>
-
-            <div class="d-flex justify-content-center gap-2 mt-3">
-                <a href="{{ url_for('class_results', grade='9', class_name='C') }}" class="btn result-btn">Result</a>
-                <a href="{{ url_for('assign_test') }}" class="assign-btn text-center">Exam</a>
-            </div>
-        </div>
-
-        <button class="add-card-btn">+</button>
-    </div>
-
+    {% endfor %}
 </div>
-
 <style>
-
 .filter-select {
     width: 170px;
     border-radius: 10px;
-    padding-right: 2.5rem;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 0.75rem center;
-    background-size: 16px 12px;
-    appearance: none;
 }
 
 .grade-board {
@@ -410,37 +130,40 @@
     background: #f7f9ff;
     padding: 20px;
     border-radius: 14px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
-    min-width: 350px;
+
+    width: 380px;
+    min-width: 380px;
     max-width: 380px;
-    display: flex;
-    flex-direction: column;
 }
 
-.grade-header-full {
-    width: 100%;
-    background: #e8efff;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-/* Class filter */
 .class-filter {
     width: 110px;
     border-radius: 8px;
     font-size: 14px;
 }
 
-/* Card */
 .grade-card {
     background: white;
     padding: 22px;
     border-radius: 12px;
-
     border: 3px solid #0097e6 !important;
-
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     margin-bottom: 18px;
+
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Subject box */
+.subject-box {
+    background: #f1f5ff;
+    padding: 12px;
+    border-radius: 12px;
+
+    min-height: 70px;
+    max-height: 120px;
+    overflow-y: auto;
 }
 
 .card-header-line {
@@ -451,31 +174,37 @@
     margin-bottom: 10px;
 }
 
-/* Assign Test Button */
 .assign-btn {
     background: #0097e6;
     color: white;
     padding: 10px 30px;
     border-radius: 10px;
     font-weight: 600;
-    text-decoration: none;
+    text-decoration: none !important;
 }
-.assign-btn:hover { background: #0080c4; }
 
-/* Result Button */
+.assign-btn:hover {
+    background: #007cc2 !important;  
+    color: white !important;
+    text-decoration: none !important;
+}
+
 .result-btn {
     background: #f39c12;
     color: white;
     padding: 10px 30px;
-    border-radius: 10px;
     font-weight: 600;
-    text-decoration: none;
+    border-radius: 10px;
+    text-decoration: none !important;
 }
-.result-btn:hover { background: #d98a0e; }
 
-/* Add Card */
+.result-btn:hover {
+    background: #cf7d01 !important;  
+    color: white !important;
+    text-decoration: none !important;
+}
+
 .add-card-btn {
-    margin-top: auto;
     background: #dbeafe;
     border: none;
     width: 100%;
@@ -483,22 +212,6 @@
     border-radius: 12px;
     font-size: 28px;
     font-weight: bold;
-    cursor: pointer;
-}
-.add-card-btn:hover { background: #bfdbfe; }
-
-/* Subjects */
-.subject-box {
-    background: #f1f5ff;
-    padding: 12px;
-    border-radius: 12px;
-}
-
-.subject-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    justify-content: center;
 }
 
 .subject-pill {
@@ -506,19 +219,40 @@
     background: #fff7a3;
     border-radius: 10px;
     font-weight: 700;
-    color: #6b5800;
-    font-size: 16px;
-    line-height: 1;
 }
-
-.subject-yellow {
-    background: #fff7a3;
-}
-.grade-card p {
-    margin-bottom: 4px !important;   
-    line-height: 1.2;                
-}
-
 </style>
+
+<script>
+// ---------------------- TEACHER + YEAR FILTER ----------------------
+document.getElementById("teacherFilter").addEventListener("change", filterAll);
+document.getElementById("yearFilter").addEventListener("change", filterAll);
+
+function filterAll() {
+    let selectedTeacher = document.getElementById("teacherFilter").value;
+    let selectedYear = document.getElementById("yearFilter").value;
+
+    document.querySelectorAll(".class-box").forEach(card => {
+        let matchTeacher = (!selectedTeacher || selectedTeacher === card.dataset.teacher);
+        let matchYear = (!selectedYear || selectedYear === card.dataset.year);
+
+        card.style.display = (matchTeacher && matchYear) ? "block" : "none";
+    });
+}
+
+// ---------------------- CLASS FILTER ----------------------
+document.querySelectorAll(".classFilter").forEach(filter => {
+    filter.addEventListener("change", function () {
+        let grade = this.dataset.grade;
+        let selectedClass = this.value;
+
+        document
+            .querySelectorAll(`.grade-column[data-grade="${grade}"] .class-box`)
+            .forEach(card => {
+                let match = (!selectedClass || selectedClass === card.dataset.class);
+                card.style.display = match ? "block" : "none";
+            });
+    });
+});
+</script>
 
 {% endblock %}

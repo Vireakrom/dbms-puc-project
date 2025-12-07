@@ -9,15 +9,12 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- FEATHER ICONS -->
+
 <script src="https://unpkg.com/feather-icons"></script>
 
 <style>
 body { background: #f4f6fb; }
 
-/* ===========================
-   TOP 5 CARDS
-=========================== */
 .dashboard-cards {
     display: flex;
     justify-content: space-between;
@@ -75,9 +72,6 @@ body { background: #f4f6fb; }
     color: #1e293b;
 }
 
-/* ===========================
-   NOTIFICATIONS
-=========================== */
 .notification-card {
     background: #fff;
     padding: 15px;
@@ -88,8 +82,8 @@ body { background: #f4f6fb; }
 }
 
 .notif-time {
-    width: 60px;
-    font-weight: 700;
+    width: 75px;
+    font-weight: 900;
 }
 .notif-time.blue { color: #0d47a1; }
 .notif-time.green { color: #0a5c34; }
@@ -98,15 +92,13 @@ body { background: #f4f6fb; }
 .notif-time.red { color: #b71c1c; }
 
 .notif-line {
-    width: 3px;
-    height: 32px;
+    width: 4px;
+    height: 35px;
     margin-right: 10px;
     border-radius: 3px;
 }
 
-/* ===========================
-   RESULT OVERVIEW
-=========================== */
+
 .result-card {
     background: #fff;
     padding: 25px;
@@ -168,9 +160,6 @@ body { background: #f4f6fb; }
     min-width: 350px;  
 }
 
-/* ===========================
-   LIVE EXAM MONITORING (IMPROVED SCROLL)
-=========================== */
 
 .outer-exam-wrapper {
     background: white;
@@ -208,7 +197,6 @@ body { background: #f4f6fb; }
     border-radius: 16px;
 }
 
-/* FIXED + IMPROVED HORIZONTAL SCROLL UX */
 .exam-scroll-container {
     display: flex;
     gap: 22px;
@@ -300,93 +288,188 @@ body { background: #f4f6fb; }
     max-width: 265px !important;
 }
 
-/* ===========================================
-   ⭐ APPLY CONSISTENT TITLE STYLE (SAFE BLOCK)
-=========================================== */
 .section-title {
     font-size: 20px !important;
     font-weight: 700 !important;
     margin-bottom: 10px;
     margin-top: 5px;
 }
+
+.overview-cards {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 25px;
+}
+
+.overview-card {
+    flex: 1;
+    min-width: 220px;
+    background: #ffffff;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+    transition: .2s;
+}
+
+.overview-card:hover {
+    transform: translateY(-5px);
+}
+
+.overview-title {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.overview-value {
+    margin-top: 10px;
+    font-size: 26px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.overview-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color:white;
+    margin-left: auto;
+}
+#resultChart {
+    max-width: 260px !important;
+    max-height: 260px !important;
+}
+.donut-wrapper {
+    min-width: 260px;
+    min-height: 260px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.exam-info-text,
+.exam-info-text * {
+    font-size: 17px !important;
+    line-height: 1.35 !important;
+    color: #374151 !important;
+    font-weight: 400 !important;
+    margin-bottom: 8px !important;
+}
+
+.exam-teacher {
+    font-size: 17px !important;
+    font-weight: 400 !important;
+}
+
+
+.exam-bottom {
+    font-size: 15px !important;
+    font-weight: 400 !important;
+    color: #374151 !important;
+    margin-top: 10px;
+}
+
+.exam-bottom i {
+    font-size: 18px !important;
+    margin-right: 6px;
+}
+
+.exam-status-big {
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    margin-top: -5px;  
+    margin: 0 !important;        
+ 
+}
+.exam-title {
+    text-align: center !important;
+    margin-bottom: 12px !important;
+    width: 100%;
+}
+.exam-header-center {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
 </style>
 
-<!-- ================= TOP 5 CARDS ================= -->
+<!-- =================== DASHBOARD OVERVIEW CARDS =================== -->
 <div class="dashboard-cards">
 
-    <div class="stat-card" onclick="location.href='/students_list/'">
-        <div class="d-flex justify-content-between align-items-center w-100 mb-3">
+    <!-- STUDENTS -->
+   <a href="{{ url_for('admin_total_students', from_dashboard=1) }}" class="text-decoration-none text-dark w-100">
+
+        <div class="stat-card">
             <span class="stat-title">Total Students</span>
-            <i class="bi bi-three-dots-vertical text-muted"></i>
-        </div>
-
-        <div class="stat-body justify-content-center">
-            <div class="stat-number">{{ total_students }}</div>
-            <div class="stat-icon-circle ms-3" style="background:#1565C0;">
-                <i class="bi bi-people-fill"></i>
+            <div class="stat-body">
+                <div class="stat-number">{{ total_students }}</div>
+                <div class="stat-icon-circle" style="background:#1565C0;">
+                    <i class="bi bi-people-fill"></i>
+                </div>
             </div>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card" onclick="location.href='/teachers-list/'">
-        <div class="d-flex justify-content-between align-items-center w-100 mb-3">
+    <!-- TEACHERS -->
+    <a href="{{ url_for('admin_total_teachers', from_dashboard=1) }}" class="text-decoration-none text-dark w-100">
+        <div class="stat-card">
             <span class="stat-title">Total Teachers</span>
-            <i class="bi bi-three-dots-vertical text-muted"></i>
-        </div>
-
-        <div class="stat-body justify-content-center">
-            <div class="stat-number">{{ total_teachers }}</div>
-            <div class="stat-icon-circle ms-3" style="background:#009688;">
-                <i class="bi bi-person-workspace"></i>
+            <div class="stat-body">
+                <div class="stat-number">{{ total_teachers }}</div>
+                <div class="stat-icon-circle" style="background:#009688;">
+                    <i class="bi bi-person-workspace"></i>
+                </div>
             </div>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card" onclick="location.href='/classes-list/'">
-        <div class="d-flex justify-content-between align-items-center w-100 mb-3">
+    <!-- CLASSES -->
+    <a href="{{ url_for('admin_add_class', from_dashboard=1) }}" class="text-decoration-none text-dark w-100">
+        <div class="stat-card">
             <span class="stat-title">Total Classes</span>
-            <i class="bi bi-three-dots-vertical text-muted"></i>
-        </div>
-
-        <div class="stat-body justify-content-center">
-            <div class="stat-number">{{ total_classes }}</div>
-            <div class="stat-icon-circle ms-3" style="background:#f39c12;">
-                <i class="bi bi-door-open-fill"></i>
+            <div class="stat-body">
+                <div class="stat-number">{{ total_classes }}</div>
+                <div class="stat-icon-circle" style="background:#f39c12;">
+                    <i class="bi bi-door-open-fill"></i>
+                </div>
             </div>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card" onclick="location.href='/subjects-list/'">
-        <div class="d-flex justify-content-between align-items-center w-100 mb-3">
+    <!-- SUBJECTS -->
+    <a href="{{ url_for('admin_add_subject', from_dashboard=1) }}" class="text-decoration-none text-dark w-100">
+        <div class="stat-card">
             <span class="stat-title">Total Subjects</span>
-            <i class="bi bi-three-dots-vertical text-muted"></i>
-        </div>
-
-        <div class="stat-body justify-content-center">
-            <div class="stat-number">{{ total_subjects }}</div>
-            <div class="stat-icon-circle ms-3" style="background:#8e44ad;">
-                <i class="bi bi-journal-bookmark-fill"></i>
+            <div class="stat-body">
+                <div class="stat-number">{{ total_subjects }}</div>
+                <div class="stat-icon-circle" style="background:#8e44ad;">
+                    <i class="bi bi-journal-bookmark-fill"></i>
+                </div>
             </div>
         </div>
-    </div>
+    </a>
 
-    <div class="stat-card" onclick="location.href='/reports-list/'">
-        <div class="d-flex justify-content-between align-items-center w-100 mb-3">
-            <span class="stat-title">Total Reports</span>
-            <i class="bi bi-three-dots-vertical text-muted"></i>
-        </div>
-
-        <div class="stat-body justify-content-center">
-            <div class="stat-number">{{ total_reports }}</div>
-            <div class="stat-icon-circle ms-3" style="background:#e74c3c;">
-                <i class="bi bi-flag-fill"></i>
+    <!-- REPORTS -->
+    <a href="{{ url_for('admin_report', from_dashboard=1) }}" class="text-decoration-none text-dark w-100">
+        <div class="stat-card">
+            <span class="stat-title">Reports</span>
+            <div class="stat-body">
+                <div class="stat-icon-circle" style="background:#e74c3c;">
+                    <i class="bi bi-flag-fill"></i>
+                </div>
             </div>
         </div>
-    </div>
+    </a>
 
 </div>
 
+
 <!-- ================= NOTIFICATION + RESULT OVERVIEW ================= -->
+
 <div class="row g-4 align-items-stretch mt-3">
 
     <!-- LEFT: NOTIFICATIONS -->
@@ -396,121 +479,117 @@ body { background: #f4f6fb; }
 
             <ul class="list-unstyled mt-3">
 
-                <li class="mb-3 d-flex">
-                    <div class="notif-time blue">10:10</div>
-                    <div class="notif-line" style="background:#1e88e5;"></div>
-                    <div>Added Students Successfully.<br><small>by Johne</small></div>
-                </li>
+                {% set colors = ['blue', 'green', 'cyan', 'orange', 'red'] %}
+                {% set line_colors = ['#1e88e5','#2ecc71','#00bcd4','#ff7043','#e57373'] %}
 
+                {# SHOW NEWEST FIRST #}
+                {% for log in notifications|reverse %}
                 <li class="mb-3 d-flex">
-                    <div class="notif-time green">08:40</div>
-                    <div class="notif-line" style="background:#2ecc71;"></div>
-                    <div>Added Subjects Successfully.<br><small>by Amla</small></div>
-                </li>
 
-                <li class="mb-3 d-flex">
-                    <div class="notif-time cyan">07:10</div>
-                    <div class="notif-line" style="background:#00bcd4;"></div>
-                    <div>Added Reports Successfully.<br><small>by Josef</small></div>
-                </li>
+                    <!-- TIME COLOR -->
+                    <div class="notif-time {{ colors[loop.index0 % 5] }}">
+                        {{ log.timestamp.strftime("%H:%M") }}
+                    </div>
 
-                <li class="mb-3 d-flex">
-                    <div class="notif-time orange">01:15</div>
-                    <div class="notif-line" style="background:#ff7043;"></div>
-                    <div>Grade 7A took Quiz 1.<br><small>by Rima</small></div>
-                </li>
+                    <!-- VERTICAL LINE -->
+                    <div class="notif-line"
+                        style="background: {{ line_colors[loop.index0 % 5] }};">
+                    </div>
 
-                <li class="mb-3 d-flex">
-                    <div class="notif-time red">23:12</div>
-                    <div class="notif-line" style="background:#e57373;"></div>
-                    <div>Teacher created Successfully.<br><small>by Alaxa</small></div>
+                    <!-- MESSAGE -->
+                    <div>
+                        {{ log.action }}.<br>
+                        <small>by {{ log.user_name }}</small>
+
+                    </div>
+
                 </li>
+                {% endfor %}
+
+                {% if notifications|length == 0 %}
+                    <li class="text-muted mt-2">No recent notifications.</li>
+                {% endif %}
 
             </ul>
         </div>
     </div>
 
-    <!-- RIGHT: RESULT OVERVIEW -->
-    <div class="col-md-8 d-flex">
-        <div class="result-card flex-fill">
+ <!-- RIGHT: RESULT OVERVIEW -->
+<div class="col-md-8 d-flex">
+    <div class="result-card flex-fill">
 
-            <h3 class="section-title text-center">Result Overview</h3>
-            <div class="result-divider"></div>
+        <h3 class="section-title text-center">Result Overview</h3>
+        <div class="result-divider"></div>
 
-            <!-- FILTERS -->
-            <div class="result-filters d-flex flex-wrap justify-content-center gap-3 mb-3">
+        <!-- FILTERS -->
+        <div class="result-filters d-flex flex-wrap justify-content-center gap-3 mb-3">
 
-                <select class="filter-select">
-                    <option>Filter by Grade</option>
-                    <option>All Grades</option>
-                    <option>Grade 7</option>
-                    <option>Grade 8</option>
-                    <option>Grade 9</option>
-                </select>
+            <!-- GRADE FILTER -->
+            <select class="filter-select" id="gradeFilter">
+                <option value="">Filter by Grade</option>
+                {% for g in grades %}
+                    <option value="{{ g.grade_level }}">Grade {{ g.grade_level }}</option>
+                {% endfor %}
+            </select>
 
-                <select class="filter-select">
-                    <option>Filter by Teacher</option>
-                    <option>Teacher A</option>
-                    <option>Teacher B</option>
-                    <option>Teacher C</option>
-                </select>
+            <!-- TEACHER FILTER -->
+            <select class="filter-select" id="teacherFilter">
+                <option value="">Filter by Teacher</option>
+            </select>
 
-                <select class="filter-select">
-                    <option>Year</option>
-                    <option>2023</option>
-                    <option>2024</option>
-                    <option>2025</option>
-                </select>
+            <!-- YEAR FILTER -->
+            <select class="filter-select" id="yearFilter">
+                <option value="">Year</option>
+                {% for y in years %}
+                    <option value="{{ y.academic_year }}">{{ y.academic_year }}</option>
+                {% endfor %}
+            </select>
 
-                <select class="filter-select">
-                    <option>Result Type</option>
-                    <option>Top Result</option>
-                    <option>Average</option>
-                    <option>Fail</option>
-                </select>
-
-            </div>
-
-            <!-- Chart Box -->
-            <div class="result-chart-box">
-
-                <div class="result-inner" style="align-items: flex-start;">
-
-                    <!-- LEFT CHART -->
-                    <div class="donut-wrapper" style="flex: 0 0 260px; text-align:center;">
-                        <canvas id="resultChart" width="220" height="220"></canvas>
-                    </div>
-
-                    <!-- RIGHT PANEL -->
-                    <div class="result-info-panel">
-
-                        <h6 class="fw-bold mb-3">Performance Summary</h6>
-
-                        <div class="mb-2"><b>Top Result:</b> 60 Students</div>
-                        <div class="mb-2"><b>Average:</b> 30 Students</div>
-                        <div class="mb-2"><b>Fail:</b> 10 Students</div>
-
-                        <hr>
-
-                        <p class="text-muted mb-1">Filtered Grade: <b>Grade 7</b></p>
-                        <p class="text-muted mb-1">Teacher: <b>Teacher A</b></p>
-                        <p class="text-muted mb-1">Year: <b>2024</b></p>
-
-                    </div>
-
-                </div>
-            </div>
+            <!-- RESULT TYPE FILTER -->
+            <select class="filter-select" id="resultTypeFilter">
+                <option value="">Result Type</option>
+                <option value="top">Top Result</option>
+                <option value="average">Average</option>
+                <option value="fail">Fail</option>
+            </select>
 
         </div>
+
+        <!-- Chart Box -->
+        <div class="result-chart-box">
+            <div class="result-inner d-flex" style="align-items: flex-start;">
+
+                <!-- LEFT CHART -->
+                <div class="donut-wrapper" style="flex: 0 0 260px; text-align:center;">
+                    <canvas id="resultChart" width="220" height="220"></canvas>
+                </div>
+
+                <!-- RIGHT PANEL -->
+                <div class="result-info-panel">
+                    <h6 class="fw-bold mb-3">Performance Summary</h6>
+
+                    <div class="mb-2"><b>Top Result:</b> <span id="topResult">{{ top_result }}</span> Students</div>
+                    <div class="mb-2"><b>Average:</b> <span id="averageResult">{{ average_result }}</span> Students</div>
+                    <div class="mb-2"><b>Fail:</b> <span id="failResult">{{ fail_result }}</span> Students</div>
+
+                    <hr>
+
+                    <p class="text-muted mb-1">Filtered Grade: <b id="selectedGrade">None</b></p>
+                    <p class="text-muted mb-1">Teacher: <b id="selectedTeacher">None</b></p>
+                    <p class="text-muted mb-1">Year: <b id="selectedYear">None</b></p>
+                </div>
+
+            </div>
+        </div>
+
     </div>
-
+    
 </div>
-
-<!-- ================= LIVE EXAM MONITORING ================= -->
 <div class="outer-exam-wrapper">
 
     <div class="exam-top-bar">
-        <h3 class="section-title">Live Exams Monitoring</h3>
+        <h3 class="section-title">Exam Status Monitoring</h3>
+
         <div>
             <button class="nav-btn" id="leftBtn"><i class="bi bi-chevron-left"></i></button>
             <button class="nav-btn" id="rightBtn"><i class="bi bi-chevron-right"></i></button>
@@ -518,108 +597,246 @@ body { background: #f4f6fb; }
     </div>
 
     <div class="inner-dark-wrap">
-
         <div class="exam-scroll-container" id="examScroll">
 
-            {% for exam in range(5) %}
-            <div class="exam-box">
-                <span class="exam-subject-tag">Subject {{ exam }}</span>
-                <div class="exam-icon mb-2">
-                    <i class="bi bi-pencil-square" style="font-size:22px;color:#2563eb;"></i>
-                </div>
-                <h5 class="fw-bold">Class {{ exam }} Test</h5>
-                <p class="text-success">● Live Now</p>
-                <div><i class="bi bi-clock"></i> 9.00 AM - 1.00 PM</div>
-                <div><i class="bi bi-people"></i> {{ 40 + exam }} Students</div>
-                <div class="progress-horizontal">
-                    <div class="progress-fill" style="width: '{{ 40 + exam }}%';"></div>
+            {% if live_exams and live_exams|length > 0 %}
+                {% for exam in live_exams %}
+
+                {% set total_minutes = (exam.end_time - exam.start_time).seconds // 60 %}
+                {% set minutes_left = exam.minutes_left if exam.minutes_left > 0 else 0 %}
+
+                {% if exam.status == 'live' %}
+                    {% if total_minutes > 0 %}
+                        {% set percent_done = ((total_minutes - minutes_left) / total_minutes * 100) | round(0) %}
+                    {% else %}
+                        {% set percent_done = 0 %}
+                    {% endif %}
+                {% elif exam.status == 'finished' %}
+                    {% set percent_done = 100 %}
+                {% else %}
+                    {% set percent_done = 0 %}
+                {% endif %}
+
+                <div class="exam-box">
+
+                    <span class="exam-subject-tag">{{ exam.subject_name }}</span>
+
+                    <div class="exam-icon mb-2">
+                        <i class="bi bi-pencil-square" style="font-size:24px;color:#2563eb;"></i>
+                    </div>
+
+                    <div class="exam-header-center">
+                        <h5 class="fw-bold exam-title">Class {{ exam.class_name }} Test</h5>
+
+                        {% if exam.status == 'live' %}
+                            <p class="exam-status-big text-success">● Live Now</p>
+                        {% elif exam.status == 'upcoming' %}
+                            <p class="exam-status-big text-warning">● Upcoming</p>
+                        {% else %}
+                            <p class="exam-status-big text-danger">● Finished</p>
+                        {% endif %}
+                    </div>
+
+                    <p class="exam-info-text">
+                        <i class="bi bi-journal-text"></i>
+                        {{ exam.exam_type }} • {{ exam.percentage_weight }}%
+                    </p>
+
+                    <p class="exam-info-text exam-teacher">
+                        <i class="bi bi-person"></i>
+                        Teacher: {{ exam.teacher_name if exam.teacher_name else "Unknown" }}
+                    </p>
+
+                    <p class="exam-info-text">
+                        <i class="bi bi-clock"></i>
+                        {{ exam.start_time.strftime("%I:%M %p") }} – {{ exam.end_time.strftime("%I:%M %p") }}
+                    </p>
+
+                    <p class="exam-info-text">
+                        <i class="bi bi-people"></i> {{ exam.total_students }} Students
+                    </p>
+
+                    <div class="progress-horizontal">
+                        <div class="progress-fill" style="width: {{ percent_done }}%;"></div>
+                    </div>
+
+                    <div class="exam-bottom mt-2">
+                        {% if exam.status == 'live' %}
+                            <i class="bi bi-hourglass-split"></i> {{ minutes_left }} min left
+                        {% elif exam.status == 'upcoming' %}
+                            <i class="bi bi-calendar-event"></i> Starts soon
+                        {% else %}
+                            <i class="bi bi-check2-circle"></i> Exam Ended
+                        {% endif %}
+                    </div>
 
                 </div>
-                <div class="exam-bottom">{{ 60 - exam }} min left</div>
-            </div>
-            {% endfor %}
+
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">No exams available.</p>
+            {% endif %}
 
         </div>
     </div>
-
 </div>
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
     const scroller = document.getElementById("examScroll");
     const leftBtn = document.getElementById("leftBtn");
     const rightBtn = document.getElementById("rightBtn");
-
-    const SCROLL_STEP = 320; // scroll one full card
+    const SCROLL_STEP = 320;
 
     function updateButtons() {
+        if (!scroller) return;
         const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-
         leftBtn.disabled = scroller.scrollLeft <= 0;
         rightBtn.disabled = scroller.scrollLeft >= maxScroll - 2;
     }
 
-    function scrollLeft() {
-        scroller.scrollBy({ left: -SCROLL_STEP, behavior: "smooth" });
-        setTimeout(updateButtons, 350);
+    if (scroller) {
+        leftBtn.addEventListener("click", () => {
+            scroller.scrollBy({ left: -SCROLL_STEP, behavior: "smooth" });
+            setTimeout(updateButtons, 350);
+        });
+
+        rightBtn.addEventListener("click", () => {
+            scroller.scrollBy({ left: SCROLL_STEP, behavior: "smooth" });
+            setTimeout(updateButtons, 350);
+        });
+
+        scroller.addEventListener("scroll", updateButtons);
+        updateButtons();
     }
 
-    function scrollRight() {
-        scroller.scrollBy({ left: SCROLL_STEP, behavior: "smooth" });
-        setTimeout(updateButtons, 350);
-    }
+    feather.replace();
 
-    leftBtn.addEventListener("click", scrollLeft);
-    rightBtn.addEventListener("click", scrollRight);
+    let chart = null;
 
-    scroller.addEventListener("scroll", updateButtons);
+    function renderChart(top, avg, fail) {
+        const ctx = document.getElementById("resultChart");
 
-    updateButtons();
-});
+        let safeTop = top;
+        let safeAvg = avg;
+        let safeFail = fail;
 
-/* Feather Icons */
-feather.replace();
-
-/* Result Chart */
-new Chart(document.getElementById('resultChart'), {
-    type:'doughnut',
-    data:{
-        labels:['Top Result','Average','Fail'],
-        datasets:[{
-            data:[60,30,10],
-            backgroundColor:['#3b82f6','#f59e0b','#ef4444'],
-            hoverOffset: 8
-        }]
-    },
-    options:{
-        responsive: false,
-        maintainAspectRatio: false,
-        cutout: '60%',
-        plugins:{ legend:{ display:false } }
-    }
-});
-
-/* Attendance Chart */
-new Chart(document.getElementById('attendanceChart'), {
-    data:{
-        labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-        datasets:[
-            { type:'bar', label:'Attendance',
-              data:[430,500,410,660,220,410,180,350,720,300,260,150],
-              backgroundColor:'rgba(111,66,193,0.45)', borderRadius:8, barThickness:30 },
-
-            { type:'line', label:'Passed',
-              data:[310,630,420,510,450,610,170,510,800,220,390,140],
-              borderColor:'#0f8558', borderWidth:3, tension:0.4 }
-        ]
-    },
-    options:{
-        plugins:{ legend:{ display:false }},
-        scales:{
-            y:{ beginAtZero:true },
-            x:{ grid:{ display:false }}
+        if (top === 0 && avg === 0 && fail === 0) {
+            safeTop = 1;
+            safeAvg = 1;
+            safeFail = 1;
         }
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Top Result', 'Average', 'Fail'],
+                datasets: [{
+                    data: [safeTop, safeAvg, safeFail],
+                    backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'],
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: { display: false },
+
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                const index = ctx.dataIndex;
+                                const realValues = [top, avg, fail];
+                                return `${ctx.label}: ${realValues[index]} students`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
+
+
+    renderChart({{ top_result }}, {{ average_result }}, {{ fail_result }});
+
+
+    const gradeFilter = document.getElementById("gradeFilter");
+    const teacherFilter = document.getElementById("teacherFilter");
+    const yearFilter = document.getElementById("yearFilter");
+    const resultTypeFilter = document.getElementById("resultTypeFilter");
+
+    const selectedGrade = document.getElementById("selectedGrade");
+    const selectedTeacher = document.getElementById("selectedTeacher");
+    const selectedYear = document.getElementById("selectedYear");
+
+    function updateLabels() {
+        selectedGrade.textContent = gradeFilter.value ? "Grade " + gradeFilter.value : "None";
+
+        selectedTeacher.textContent =
+            teacherFilter.selectedIndex > 0
+                ? teacherFilter.options[teacherFilter.selectedIndex].text
+                : "None";
+
+        selectedYear.textContent = yearFilter.value || "None";
+    }
+
+    function updateResults() {
+        const grade = gradeFilter.value;
+        const teacher = teacherFilter.value;
+        const year = yearFilter.value;
+        const type = resultTypeFilter.value;
+
+        fetch(`/admin/get_results?grade=${grade}&teacher_id=${teacher}&year=${year}&type=${type}`)
+            .then(res => res.json())
+            .then(data => {
+                renderChart(data.top, data.avg, data.fail);
+
+                document.getElementById("topResult").innerText = data.top;
+                document.getElementById("averageResult").innerText = data.avg;
+                document.getElementById("failResult").innerText = data.fail;
+
+                updateLabels();
+            })
+            .catch(err => console.error("Error fetching results:", err));
+    }
+
+    gradeFilter.addEventListener("change", () => {
+        let grade = gradeFilter.value;
+
+        teacherFilter.innerHTML = `<option value="">Filter by Teacher</option>`;
+        selectedTeacher.textContent = "None";
+
+        if (grade === "") {
+            updateResults();
+            return;
+        }
+
+        fetch(`/admin/get_teachers_by_grade?grade=${grade}`)
+            .then(res => res.json())
+            .then(data => {
+                data.forEach(t => {
+                    let option = document.createElement("option");
+                    option.value = t.teacher_id;       
+                    option.textContent = t.full_name;  
+                    teacherFilter.appendChild(option);
+                });
+
+                updateResults();
+            });
+    });
+
+    teacherFilter.addEventListener("change", updateResults);
+    yearFilter.addEventListener("change", updateResults);
+    resultTypeFilter.addEventListener("change", updateResults);
+
+    updateLabels();
 });
 </script>
+
+
 {% endblock %}

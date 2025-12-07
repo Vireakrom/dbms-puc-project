@@ -1,0 +1,737 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Teachers Management{% endblock %}
+{% block header_title %}Teachers Management{% endblock %}
+
+{% block content %}
+
+<style>
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 25px 0 15px;
+    }
+
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .kpi-card {
+        background: #fff;
+        padding: 25px;
+        border-radius: 18px;
+        border: 1px solid #eef0f3;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        transition: 0.25s ease;
+        position: relative;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+
+    .kpi-title { font-size: 15px; font-weight: 600; color:#64748b; }
+    .kpi-value { font-size: 36px; font-weight: 800; color:#0f172a; margin-top:10px; }
+
+    .kpi-icon {
+        position:absolute; top:20px; right:20px;
+        width:46px; height:46px;
+        border-radius:14px;
+        background:#475569; color:#fff; font-size:20px;
+        display:flex; align-items:center; justify-content:center;
+    }
+
+    .chart-card {
+        background:#fff;
+        padding:25px;
+        border-radius:18px;
+        border:1px solid #eef0f3;
+        box-shadow:0 4px 14px rgba(0,0,0,0.06);
+        margin-bottom:25px;
+        height:360px !important;
+    }
+
+    .teachers-card {
+        background:#fff;
+        padding:20px;
+        border-radius:18px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.06);
+        margin-top:25px;
+    }
+
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: #2c3e50;
+        color: #fff;
+        border: none;
+        border-radius: 18px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .back-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.16);
+        opacity: 0.98;
+    }
+
+    .back-icon {
+        background-color: #2c3e50;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    /* Choices.js Beautiful Styling */
+    .choices__inner {
+        border-radius: 10px !important;
+        border: 1px solid #d1d5db !important;
+        padding: 8px 12px !important;
+        min-height: 45px !important;
+    }
+
+    .choices__list--multiple .choices__item {
+        background: #1e74ff !important;
+        color: white !important;
+        border-radius: 6px !important;
+        padding: 4px 10px !important;
+        font-size: 12px;
+        margin: 2px 4px !important;
+    }
+
+    .choices__list--dropdown {
+        border-radius: 10px !important;
+    }
+
+    .choices__input {
+        padding: 4px !important;
+    }
+
+</style>
+
+<!-- BACK BUTTON -->
+<div class="mb-3">
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn" aria-label="Go back">
+        <span class="back-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        Back
+    </a>
+
+</div>
+
+<!-- KPI SECTION -->
+<div class="section-title">Teachers Overview</div>
+
+<div class="kpi-grid">
+
+    <div class="kpi-card">
+        <div class="kpi-title">Total Teachers</div>
+        <div class="kpi-icon" style="background:#0ea5e9;">
+            <i class="bi bi-person-lines-fill"></i>
+        </div>
+        <div id="totalTeachers" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">Male Teachers</div>
+        <div class="kpi-icon" style="background:#3b82f6;">
+            <i class="bi bi-gender-male"></i>
+        </div>
+        <div id="maleTeachers" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">Female Teachers</div>
+        <div class="kpi-icon" style="background:#ec4899;">
+            <i class="bi bi-gender-female"></i>
+        </div>
+        <div id="femaleTeachers" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">Active Teachers</div>
+        <div class="kpi-icon" style="background:#14b8a6;">
+            <i class="bi bi-person-check"></i>
+        </div>
+        <div id="activeTeachers" class="kpi-value">0</div>
+    </div>
+
+</div>
+
+
+<!-- CHARTS -->
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="chart-card">
+            <h6 class="fw-bold mb-3">Teachers Per Subject</h6>
+            <canvas id="departmentChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="chart-card">
+            <h6 class="fw-bold mb-3">Teachers by Grade Level</h6>
+            <canvas id="gradeLevelChart"></canvas>
+        </div>
+    </div>
+</div>
+
+
+<!-- TEACHERS TABLE -->
+
+<div class="teachers-card">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h6 class="mb-0 fw-bold">Teachers List</h6>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+            <!-- Add Button -->
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addTeacherModal">
+                <i class="bi bi-plus-circle"></i> Add New
+            </button>
+
+            <select class="form-select form-select-sm" style="width:140px;">
+                <option selected>Teachers CSV</option>
+            </select>
+
+            <input type="file" class="form-control form-control-sm" style="width:220px;">
+
+            <button class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-upload"></i> Import
+            </button>
+
+            <input type="text" id="globalSearch"
+                class="form-control form-control-sm"
+                placeholder="Search name, subject, email..."
+                style="width:250px;">
+
+            <select id="perPageSelect" class="form-select form-select-sm" style="width:110px;">
+                <option value="10"  {% if request.args.get('per_page','10')=='10' %}selected{% endif %}>10 / page</option>
+                <option value="25"  {% if request.args.get('per_page','10')=='25' %}selected{% endif %}>25 / page</option>
+                <option value="50"  {% if request.args.get('per_page','10')=='50' %}selected{% endif %}>50 / page</option>
+                <option value="100" {% if request.args.get('per_page','10')=='100' %}selected{% endif %}>100 / page</option>
+            </select>
+
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="teachersTable">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Subject</th>
+                    <th>Class</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for t in teachers %}
+                <tr>
+                    <td>{{ (teachers_pagination.page - 1) * teachers_pagination.per_page + loop.index }}</td>
+
+                    <td>{{ t.full_name }}</td>
+
+                    <td>{{ t.gender or "-" }}</td>
+
+                    <td>{{ t.subject_name or "Unassigned" }}</td>
+
+                    <!-- Class List -->
+                    <td>
+                        {% if t.classes %}
+                            {{ t.classes | join(', ') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+
+                    <td>{{ t.email }}</td>
+
+                    <td>{{ t.phone }}</td>
+
+                    <td>
+                        {% if t.is_active %}
+                            <span class="badge bg-success">Active</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+
+                        <!-- Edit Button -->
+
+                        <button class="btn btn-sm btn-primary edit-teacher"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editTeacherModal"
+                            data-id="{{ t.user_id }}"
+                            data-name="{{ t.full_name }}"
+                            data-email="{{ t.email }}"
+                            data-phone="{{ t.phone }}"
+                            data-gender="{{ t.gender }}"
+                            data-subject-id="{{ t.subject_id }}"
+                            data-class-ids="{{ t.class_ids | join(',') }}">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
+
+
+                        <!-- Toggle Status -->
+                        <button class="btn btn-sm toggle-status-btn btn-{% if t.is_active %}danger{% else %}success{% endif %}"
+                                data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
+                                data-id="{{ t.user_id }}"
+                                data-name="{{ t.full_name }}"
+                                data-current-status="{{ t.is_active }}"
+                                data-action="{{ url_for('admin_toggle_teacher_status', teacher_id=t.teacher_id) }}">
+                            <i class="bi bi-{% if t.is_active %}x-circle{% else %}check-circle{% endif %}"></i>
+                        </button>
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if teachers_pagination and teachers_pagination.pages > 1 %}
+        <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+
+            <div class="text-muted small">
+                Showing {{ teachers_pagination.per_page * (teachers_pagination.page - 1) + 1 }}
+                to {{ [teachers_pagination.per_page * teachers_pagination.page, teachers_pagination.total] | min }}
+                of {{ teachers_pagination.total }} teachers
+            </div>
+
+            <ul class="pagination pagination-sm mb-0">
+
+                <!-- Previous -->
+                <li class="page-item {% if not teachers_pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link"
+                        href="{% if teachers_pagination.has_prev %}{{ url_for('admin_total_teachers', page=teachers_pagination.prev_num, per_page=teachers_pagination.per_page) }}{% else %}#{% endif %}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                {% for page_num in range(1, teachers_pagination.pages + 1) %}
+                    <li class="page-item {% if page_num == teachers_pagination.page %}active{% endif %}">
+                        <a class="page-link"
+                            href="{{ url_for('admin_total_teachers', page=page_num, per_page=teachers_pagination.per_page) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                {% endfor %}
+
+                <!-- Next -->
+                <li class="page-item {% if not teachers_pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link"
+                        href="{% if teachers_pagination.has_next %}{{ url_for('admin_total_teachers', page=teachers_pagination.next_num, per_page=teachers_pagination.per_page) }}{% else %}#{% endif %}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+
+<!-- Add Teacher Modal -->
+<div class="modal fade" id="addTeacherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Teacher</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form action="{{ url_for('total_add_teacher') }}" method="post">
+        <div class="modal-body">
+          <div class="row g-3">
+
+            <!-- Full Name -->
+            <div class="col-md-12">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="full_name" class="form-control" placeholder="Enter full name" required>
+            </div>
+
+            <!-- Gender -->
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-select" required>
+                <option value="">-- Select Gender --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <!-- Subject -->
+            <div class="col-md-6">
+              <label class="form-label">Subject</label>
+              <select name="subject_id" class="form-select" required>
+                <option value="">-- Select Subject --</option>
+                {% for s in subjects %}
+                  <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Class MULTI-SELECT -->         
+            <div class="col-md-12">
+              <label class="form-label">Class</label>
+              <select id="addClassIds" name="class_ids[]" class="form-select" multiple>
+                  {% for c in classes %}
+                      <option value="{{ c.class_id }}">{{ c.class_name }}</option>
+                  {% endfor %}
+              </select>
+            </div>
+
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control" placeholder="Optional">
+            </div>
+
+            <!-- Phone -->
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" class="form-control" placeholder="Optional">
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- Edit Teacher Modal -->
+<div class="modal fade" id="editTeacherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Teacher</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="editTeacherForm" action="#" method="post">
+        <div class="modal-body">
+
+          <!-- Hidden Teacher ID -->
+          <input type="hidden" name="teacher_id" id="editTeacherId">
+
+          <div class="row g-3">
+
+            <!-- Full Name -->
+            <div class="col-md-12">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="editName" name="full_name" 
+                     class="form-control" placeholder="Enter full name" required>
+            </div>
+
+            <!-- Gender -->
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select id="editGender" name="gender" class="form-select" required>
+                <option value="">-- Select Gender --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <!-- Subject -->
+            <div class="col-md-6">
+              <label class="form-label">Subject</label>
+              <select id="editSubjectId" name="subject_id" class="form-select" required>
+                <option value="">-- Select Subject --</option>
+                {% for s in subjects %}
+                  <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Class MULTI-SELECT -->
+            <div class="col-md-12">
+              <label class="form-label">Class</label>
+              <select id="editClassIds" name="class_ids[]" class="form-select" multiple>
+                {% for c in classes %}
+                  <option value="{{ c.class_id }}">{{ c.class_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" id="editEmail" name="email" 
+                     class="form-control" placeholder="Optional">
+            </div>
+
+            <!-- Phone -->
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" id="editPhone" name="phone" 
+                     class="form-control" placeholder="Optional">
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Toggle Status Modal -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <form id="toggleStatusForm" method="post">
+      <div class="modal-content border-0 shadow-lg">
+
+        <div class="modal-header border-0 pb-0">
+          <h5 class="modal-title d-flex gap-2">
+            <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+            <span>Confirm Action</span>
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body pt-2">
+          <div class="alert alert-light border d-flex gap-3">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+
+            <div>
+              <p class="mb-2">
+                Are you sure you want to
+                <strong id="statusAction">deactivate</strong>
+                <strong id="statusUserName"></strong>?
+              </p>
+
+              <ul class="small text-muted mb-0">
+                <li>This teacher will no longer be able to log in</li>
+                <li>Their records will remain safe</li>
+                <li>You can reactivate this account anytime</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+
+          <button type="submit" id="statusConfirmBtn" class="btn btn-danger">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+        </div>
+
+      </div>
+    </form>
+  </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Initialize Choices.js for ADD modal
+    let addClassChoices = new Choices('#addClassIds', {
+        removeItemButton: true,
+        placeholderValue: "Select the classes this teacher will handle...",
+        searchPlaceholderValue: "Search class...",
+        shouldSort: false,
+    });
+
+    const editClassChoices = new Choices("#editClassIds", {
+        removeItemButton: true,
+        shouldSort: false,
+    });
+
+ 
+       //2. KPI Counter Animation
+    function animateCounter(id, value) {
+        const el = document.getElementById(id);
+        if (!el) return;
+
+        let current = 0;
+        const increment = Math.ceil(value / 60);
+
+        function update() {
+            current += increment;
+            if (current >= value) current = value;
+            el.textContent = current;
+            if (current < value) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    animateCounter("totalTeachers", {{ total_teachers or 0 }});
+    animateCounter("maleTeachers", {{ male_teachers or 0 }});
+    animateCounter("femaleTeachers", {{ female_teachers or 0 }});
+    animateCounter("activeTeachers", {{ active_teachers or 0 }});
+
+   
+    //3. Department Chart
+
+    new Chart(document.getElementById("departmentChart"), {
+        type: "bar",
+        data: {
+            labels: {{ department_labels | tojson }},
+            datasets: [{
+                label: "Teachers",
+                data: {{ department_values | tojson }},
+                backgroundColor: "#6366f1"
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+      // 4. Grade Level Chart
+    
+    new Chart(document.getElementById("gradeLevelChart"), {
+        type: "bar",
+        data: {
+            labels: {{ grade_level_labels | tojson }},
+            datasets: [{
+                label: "Teachers",
+                data: {{ grade_level_values | tojson }},
+                backgroundColor: "#3b82f6"
+            }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+
+
+      // 5. Global Search (with debounce)
+
+    function debounce(func, delay = 150) {
+        let timer;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => func.apply(this, args), delay);
+        };
+    }
+
+    const searchInput = document.getElementById("globalSearch");
+    if (searchInput) {
+        searchInput.addEventListener("input", debounce(function () {
+            const query = this.value.toLowerCase();
+            document.querySelectorAll("#teachersTable tbody tr").forEach(row => {
+                row.style.display = row.innerText.toLowerCase().includes(query) ? "" : "none";
+            });
+        }));
+    }
+
+
+      // 6. Toggle Teacher Status Modal
+   
+    document.body.addEventListener("click", event => {
+        const btn = event.target.closest(".toggle-status-btn");
+        if (!btn) return;
+
+        const name = btn.dataset.name;
+        const isActive = btn.dataset.currentStatus === "1";
+        const actionBtn = document.getElementById("statusConfirmBtn");
+
+        document.getElementById("statusUserName").textContent = name;
+        document.getElementById("statusAction").textContent = isActive ? "deactivate" : "activate";
+
+        actionBtn.className = "btn btn-" + (isActive ? "danger" : "success");
+        document.getElementById("toggleStatusForm").action = btn.dataset.action;
+    });
+
+   
+    // 7. Edit Teacher Modal Logic
+  
+    document.querySelectorAll(".edit-teacher").forEach(btn => {
+        btn.addEventListener("click", () => {
+
+            // Set form action
+            document.getElementById("editTeacherForm").action =
+            "/admin/total_edit_teacher/" + btn.dataset.id;
+
+            // Fill in basic fields
+            document.getElementById("editTeacherId").value = btn.dataset.id;
+            document.getElementById("editName").value = btn.dataset.name;
+            document.getElementById("editEmail").value = btn.dataset.email || "";
+            document.getElementById("editPhone").value = btn.dataset.phone || "";
+            document.getElementById("editGender").value = btn.dataset.gender || "";
+            document.getElementById("editSubjectId").value = btn.dataset.subjectId || "";
+
+            // Rebuild class selection safely
+
+            // Reset choices
+            editClassChoices.clearChoices();
+            editClassChoices.clearInput();
+
+            // Load all classes from backend
+            const allClasses = [
+                {% for c in classes %}
+                { value: "{{ c.class_id }}", label: "{{ c.class_name }}" },
+                {% endfor %}
+            ];
+
+            editClassChoices.setChoices(allClasses, "value", "label", true);
+
+            // Apply selected classes
+            const selected = btn.dataset.classIds
+                ? btn.dataset.classIds.split(",")
+                : [];
+
+            editClassChoices.setChoiceByValue(selected);
+        });
+    });
+
+});
+</script>
+
+{% endblock %}

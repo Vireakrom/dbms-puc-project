@@ -1,208 +1,232 @@
 {% extends "admin/admin_base.html" %}
 
-{% block title %}Examination{% endblock %}
-{% block header_title %}Examination{% endblock %}
+{% block title %}Assign Test{% endblock %}
+{% block header_title %}Assign Test{% endblock %}
 
 {% block content %}
 
+<!-- BACK BUTTON -->
 <div class="mb-3">
-    <a href="{{ url_for('manage_grades') }}"
-       class="btn btn-sm d-inline-flex align-items-center rounded-pill px-3 py-1"
-       style="background:#2d3e50; color:white;">
-        <i class="bi bi-arrow-left-circle me-1" style="font-size:16px;"></i>
+    <a href="{{ url_for('admin_manage_grades') }}" class="back-btn" aria-label="Go back">
+        <span class="back-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
         Back
     </a>
 </div>
 
-<div class="form-wrapper">
+<!-- PAGE TITLE -->
+<div class="text-center mb-4">
+    <h2 class="fw-bold mb-1">Assign Examination</h2>
+    <div class="subtitle-info">
+        Grade: {{ class_info.grade_level }}
+        <span class="px-2">|</span>
+        Class: {{ class_info.class_name }}
+    </div>
+</div>
 
+<!-- ASSIGN EXAM FORM -->
+<div class="form-wrapper">
     <div class="form-card">
 
-        <h3 class="form-title" style="text-align:center;width:100%;">Examination</h3>
-        <p class="form-subtitle">Fill in the details to schedule a new examination.</p>
+        <p class="form-subtitle text-center">Fill in the details to schedule the examination.</p>
 
         <form method="POST">
 
-            <!-- GRADE + CLASS -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Select Grade</label>
-                    <select id="gradeSelect" class="form-select input-style">
-                        <option selected disabled>Choose Grade</option>
-                        <option value="7">Grade 7</option>
-                        <option value="8">Grade 8</option>
-                        <option value="9">Grade 9</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Select Class</label>
-                    <select class="form-select input-style">
-                        <option selected disabled>Choose Class</option>
-                        <option>A</option>
-                        <option>B</option>
-                        <option>C</option>
-                        <option>D</option>
-                        <option>E</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- SUBJECT FIELD -->
+            <!-- SUBJECT -->
             <div class="mb-3">
                 <label class="form-label fw-bold">Subject</label>
-                
-                <div class="input-group">
-                    <span class="input-group-text" style="background:#e7efff;">
-                        <i class="bi bi-journal-bookmark" style="color:black;"></i>
-                    </span>
-
-                    <select id="subjectSelect" class="form-select input-style">
-                        <option selected disabled>Select Subject</option>
-
-                        <!-- Grade 7 Subjects -->
-                        <optgroup label="Grade 7 Subjects" class="subject-group grade-7">
-                            <option>ICT</option>
-                            <option>Mathematics (Maths)</option>
-                            <option>Khmer Language</option>
-                            <option>English</option>
-                            <option>Physics</option>
-                            <option>Chemistry</option>
-                            <option>Biology</option>
-                            <option>Earth Science</option>
-                            <option>History</option>
-                            <option>Geography</option>
-                            <option>Civics / Morality</option>
-                            <option>Physical Education</option>
-                        </optgroup>
-
-                        <!-- Grade 8 Subjects -->
-                        <optgroup label="Grade 8 Subjects" class="subject-group grade-8">
-                            <option>ICT</option>
-                            <option>Mathematics (Maths)</option>
-                            <option>Khmer Language</option>
-                            <option>English</option>
-                            <option>Physics</option>
-                            <option>Chemistry</option>
-                            <option>Biology</option>
-                            <option>Earth Science</option>
-                            <option>History</option>
-                            <option>Geography</option>
-                            <option>Civics / Morality</option>
-                            <option>Physical Education</option>
-                        </optgroup>
-
-                        <!-- Grade 9 Subjects -->
-                        <optgroup label="Grade 9 Subjects" class="subject-group grade-9">
-                            <option>ICT</option>
-                            <option>Mathematics (Maths)</option>
-                            <option>Khmer Language</option>
-                            <option>English</option>
-                            <option>Physics</option>
-                            <option>Chemistry</option>
-                            <option>Biology</option>
-                            <option>Earth Science</option>
-                            <option>History</option>
-                            <option>Geography</option>
-                            <option>Civics / Morality</option>
-                            <option>Physical Education</option>
-                        </optgroup>
-
-                    </select>
-                </div>
+                <select name="subject_id" id="subjectSelect" class="form-select input-style" required>
+                    <option disabled selected>Select Subject</option>
+                    {% for s in subjects %}
+                    <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
+                    {% endfor %}
+                </select>
             </div>
 
-            <!-- EXAM TYPE + CATEGORY -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Examination Type</label>
-                    <select class="form-select input-style">
-                        <option selected disabled>Choose Type</option>
-                        <option>QCM</option>
-                        <option>Short Answer</option>
-                    </select>
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-bold">Examination Category</label>
-                    <select class="form-select input-style">
-                        <option selected disabled>Select Category</option>
-                        <option>Quiz</option>
-                        <option>Midterm</option>
-                        <option>Final Exam</option>
-                        <option>Homework</option>
-                        <option>Fun Quiz</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- DATE -->
+            <!-- TEACHER -->
             <div class="mb-3">
-                <label class="form-label fw-bold">Scheduled Date</label>
-                <input type="date" class="form-control input-style">
+                <label class="form-label fw-bold">Teacher</label>
+                <select name="teacher_id" id="teacherSelect" class="form-select input-style" required>
+                    <option disabled selected>Select Teacher</option>
+
+                    {% if teachers and teachers|length > 0 %}
+                        {% for t in teachers %}
+                            <option value="{{ t.teacher_id }}" data-subject="{{ t.subject_id }}">
+                                {{ t.full_name }}
+                            </option>
+                        {% endfor %}
+                    {% else %}
+                        <option disabled>No teachers assigned to this class</option>
+                    {% endif %}
+                </select>
             </div>
 
-            <!-- DESCRIPTION -->
+            <!-- EXAM TYPE -->
             <div class="mb-3">
-                <label class="form-label fw-bold">Description (Optional)</label>
-                <textarea class="form-control input-style" rows="4"></textarea>
+                <label class="form-label fw-bold">Exam Type</label>
+                <select name="exam_type" id="examTypeSelect" class="form-select input-style" required>
+                    <option disabled selected>Select Exam Type</option>
+                    <option value="Quiz">Quiz</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Midterm">Midterm Exam</option>
+                    <option value="Final">Final Exam</option>
+                </select>
             </div>
 
-            <!-- BUTTONS -->
+            <!-- PERCENTAGE -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Percentage Weight</label>
+                <input type="text" name="percentage_weight" id="percentageInput"
+                       class="form-control input-style" readonly placeholder="Select exam type...">
+            </div>
+
+            <!-- TITLE -->
+            <div class="mb-3">
+                <label class="form-label fw-bold">Exam Title</label>
+                <input type="text" name="title" class="form-control input-style" required>
+            </div>
+
+            <!-- DATE & TIME -->
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Start Time</label>
+                    <input type="datetime-local" name="start_time" class="form-control input-style" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">End Time</label>
+                    <input type="datetime-local" name="end_time" class="form-control input-style" required>
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
             <div class="text-center mt-4">
-                <a href="{{ url_for('manage_grades') }}" 
-                   class="btn me-2"
-                   style="background:#e63946; color:white; padding:10px 20px; border-radius:10px; font-weight:600;">
-                   Cancel
+                <a href="{{ url_for('admin_manage_grades') }}"
+                   class="btn btn-danger me-2"
+                   style="padding:10px 20px; border-radius:10px; font-weight:600;">
+                    Cancel
                 </a>
 
-                <button class="btn"
-                        style="background:#0097e6; color:white; padding:10px 20px; border-radius:10px; font-weight:600;">
+                <button class="btn btn-primary"
+                        style="padding:10px 20px; border-radius:10px; font-weight:600;">
                     Create
                 </button>
             </div>
 
         </form>
 
-    </div>
+        <!-- FLASH MESSAGE BELOW BUTTONS (TEXT ONLY) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div id="flash-container" class="mt-3 text-center">
+                {% for category, msg in messages %}
+                    <p class="flash-text flash-{{ category }}">{{ msg }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% endwith %}
 
+    </div>
 </div>
 
-<style>
-.form-wrapper { display: flex; justify-content: center; }
-
-.form-card {
-    background: white; 
-    width: 65%; 
-    padding: 30px;
-    border-radius: 16px; 
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.form-title { font-size: 26px; font-weight: 700; }
-
-.form-subtitle { margin-top: -5px; margin-bottom: 20px; color: #6b7280; }
-
-.input-style { 
-    border-radius: 10px; 
-    padding: 10px 12px; 
-}
-
-.subject-group { display: none; }
-</style>
-
+<!-- AUTO SET PERCENTAGE -->
 <script>
-/* Auto show subject list based on selected grade */
-document.getElementById("gradeSelect").addEventListener("change", function () {
-    let grade = this.value;
-
-    document.querySelectorAll(".subject-group").forEach(group => {
-        group.style.display = "none";
-    });
-
-    let selectedGroup = document.querySelector(".grade-" + grade);
-    if (selectedGroup) selectedGroup.style.display = "block";
+document.getElementById("examTypeSelect").addEventListener("change", function () {
+    const weights = { Quiz: 10, Assignment: 20, Midterm: 30, Final: 40 };
+    document.getElementById("percentageInput").value =
+        weights[this.value] ? weights[this.value] + "%" : "";
 });
 </script>
+
+<!-- FILTER TEACHERS BASED ON SUBJECT -->
+<script>
+document.getElementById("subjectSelect").addEventListener("change", function () {
+    const selectedSubject = this.value;
+    const teacherSelect = document.getElementById("teacherSelect");
+
+    teacherSelect.value = "";
+
+    let firstMatch = null;
+
+    [...teacherSelect.options].forEach(opt => {
+        if (!opt.value) return;
+
+        if (opt.getAttribute("data-subject") === selectedSubject) {
+            opt.style.display = "block";
+            if (!firstMatch) firstMatch = opt.value;
+        } else {
+            opt.style.display = "none";
+        }
+    });
+
+    if (firstMatch) teacherSelect.value = firstMatch;
+});
+</script>
+
+<!-- AUTO-HIDE FLASH MESSAGE -->
+<script>
+setTimeout(function () {
+    const flash = document.getElementById("flash-container");
+    if (flash) {
+        flash.style.opacity = 0;
+        setTimeout(() => flash.remove(), 500);
+    }
+}, 1500);
+</script>
+
+<!-- STYLING -->
+<style>
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #2c3e50;
+    color: #fff;
+    border-radius: 18px;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    transition: 0.15s;
+}
+.back-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.16);
+}
+
+.form-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+.form-card {
+    background: white;
+    width: 80%;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+}
+
+.input-style {
+    border-radius: 10px;
+    padding: 10px 12px;
+}
+
+/* Flash message text only */
+.flash-text {
+    font-weight: 600;
+    font-size: 16px;
+    margin-top: 5px;
+    transition: opacity .5s ease;
+}
+
+.flash-success { color: #18863a; }
+.flash-danger { color: #cc1f1f; }
+
+</style>
 
 {% endblock %}

@@ -16,16 +16,19 @@ class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+
     full_name = db.Column(db.String(100))
     email = db.Column(db.String(100))
+    phone = db.Column(db.String(45))
+    gender = db.Column(db.String(10))  
+    created_at = db.Column(
+        db.DateTime,
+        server_default=db.text("CURRENT_TIMESTAMP")
+    )
     role_id = db.Column(db.Integer, db.ForeignKey('roles.role_id'), nullable=False)
     is_active = db.Column(db.Integer, default=1)
-    phone = db.Column(db.String(45))
-    # Added for temp password workflow; created by ensure_schema if missing in DB
     force_password_change = db.Column(db.Integer, default=0)
-
     role = db.relationship('Role', backref=db.backref('users', lazy=True))
-
 
 class Student(db.Model):
     __tablename__ = 'students'
@@ -64,7 +67,7 @@ class Subject(db.Model):
 def init_app(app):
     # Build DB URI from env, fallback to mysql settings in db.py
     db_user = os.environ.get('DB_USER', 'root')
-    db_pass = os.environ.get('DB_PASSWORD', 'qebfix-fiqgy4-kabGim')
+    db_pass = os.environ.get('DB_PASSWORD', 'MySQL123')
     db_host = os.environ.get('DB_HOST', 'localhost')
     db_name = os.environ.get('DB_NAME', 'final_testing_lms_db')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(

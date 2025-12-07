@@ -4,6 +4,6 @@ def connect_db():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="qebfix-fiqgy4-kabGim",
+        password="MySQL123",
         database="final_testing_lms_db"
     )

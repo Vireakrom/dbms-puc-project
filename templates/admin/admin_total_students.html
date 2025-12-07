@@ -1,0 +1,647 @@
+{% extends "admin/admin_base.html" %}
+{% block title %}Students Management{% endblock %}
+{% block header_title %}Students Management{% endblock %}
+
+{% block content %}
+
+<style>
+    .section-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 25px 0 15px;
+    }
+
+    /* KPI cards */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .kpi-card {
+        background: #fff;
+        padding: 25px;
+        border-radius: 18px;
+        border: 1px solid #eef0f3;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+        transition: 0.25s ease;
+        position: relative;
+    }
+    .kpi-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    .kpi-title { font-size: 15px; font-weight: 600; color:#64748b; }
+    .kpi-value { font-size: 36px; font-weight: 800; color:#0f172a; margin-top:10px; }
+    .kpi-icon {
+        position:absolute; top:20px; right:20px;
+        width:46px; height:46px;
+        border-radius:14px;
+        background:#475569; color:#fff; font-size:20px;
+        display:flex; align-items:center; justify-content:center;
+    }
+
+    /* Chart cards */
+    .chart-card {
+        background:#fff;
+        padding:45px;
+        border-radius:18px;
+        border:1px solid #eef0f3;
+        box-shadow:0 4px 14px rgba(0,0,0,0.06);
+        margin-bottom:25px;
+        height:320px !important;
+    }
+    .trend-card {
+        height:380px !important;
+        padding:20px;
+    }
+
+    /* Students table */
+    .students-card {
+        background:#fff;
+        padding:20px;
+        border-radius:45px;
+        box-shadow:0 4px 16px rgba(0,0,0,0.06);
+        margin-top:25px;
+    }
+    .back-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background-color: #2c3e50;
+          color: #fff;
+          border: none;
+          border-radius: 18px;
+          padding: 6px 14px;
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+          cursor: pointer;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+          transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      }
+
+      .back-btn:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0,0,0,0.16);
+          opacity: 0.98;
+      }
+
+      .back-icon {
+          background-color: #2c3e50;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+</style>
+
+<div class="mb-3">
+    <a href="{{ url_for('admin_dashboard') }}" class="back-btn" aria-label="Go back">
+        <span class="back-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 18l-6-6 6-6" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </span>
+        Back
+    </a>
+
+</div>
+
+<div class="section-title">Students Overview</div>
+
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-title">Total Students</div>
+        <div class="kpi-icon" style="background:#1e3a8a;"><i class="bi bi-people-fill"></i></div>
+        <div id="totalStudents" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">Male Students</div>
+        <div class="kpi-icon" style="background:#2563eb;"><i class="bi bi-gender-male"></i></div>
+        <div id="maleStudents" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">Female Students</div>
+        <div class="kpi-icon" style="background:#d946ef;"><i class="bi bi-gender-female"></i></div>
+        <div id="femaleStudents" class="kpi-value">0</div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-title">New Students This Month</div>
+        <div class="kpi-icon" style="background:#0ea5e9;"><i class="bi bi-calendar-plus"></i></div>
+        <div id="newStudents" class="kpi-value">0</div>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="chart-card">
+            <h6 class="fw-bold mb-3">Gender Distribution</h6>
+            <canvas id="genderChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="chart-card">
+            <h6 class="fw-bold mb-3">Students Per Class</h6>
+            <canvas id="classChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="chart-card">
+            <h6 class="fw-bold mb-3">Pass vs Fail</h6>
+            <canvas id="passFailChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="students-card">
+
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <h6 class="mb-0 fw-bold">Students List</h6>
+
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-plus-circle"></i> Add New
+            </button>
+
+            <select class="form-select form-select-sm" style="width:140px;">
+                <option selected>Students CSV</option>
+            </select>
+
+            <input type="file" class="form-control form-control-sm" style="width:220px;">
+
+            <button class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-upload"></i> Import
+            </button>
+
+            <input type="text" id="globalSearch"
+                  class="form-control form-control-sm"
+                  placeholder="Search name, email..."
+                  style="width:250px;">
+
+            <select id="perPageSelect" class="form-select form-select-sm" style="width:110px;">
+                <option value="10"  {% if request.args.get('per_page','10')=='10'  %}selected{% endif %}>10 / page</option>
+                <option value="25"  {% if request.args.get('per_page','10')=='25'  %}selected{% endif %}>25 / page</option>
+                <option value="50"  {% if request.args.get('per_page','10')=='50'  %}selected{% endif %}>50 / page</option>
+                <option value="100" {% if request.args.get('per_page','10')=='100' %}selected{% endif %}>100 / page</option>
+            </select>
+
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="studentsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Gender</th>
+                    <th>Class</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ (students_pagination.page - 1) * students_pagination.per_page + loop.index }}</td>
+                    <td>{{ s.full_name }}</td>
+                    <td>{{ s.gender or '-' }}</td>
+                    <td>{{ s.class_name or '-' }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.phone }}</td>
+
+                    <td>
+                        {% if s.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-primary edit-user"
+                                data-bs-toggle="modal" data-bs-target="#editUserModal"
+                                data-user-id="{{ s.user_id }}"
+                                data-name="{{ s.full_name }}"
+                                data-email="{{ s.email }}"
+                                data-phone="{{ s.phone }}"
+                                data-gender="{{ s.gender }}"
+                                data-class-id="{{ s.class_id }}"
+                                data-status="{{ s.is_active }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+
+
+                        <button class="btn btn-sm toggle-status-btn btn-{% if s.is_active %}danger{% else %}success{% endif %}"
+                                data-bs-toggle="modal"
+                                data-bs-target="#toggleStatusModal"
+                                data-user-id="{{ s.user_id }}"
+                                data-name="{{ s.full_name }}"
+                                data-current-status="{{ s.is_active }}"
+                                data-action="{{ url_for('admin_student_toggle_status', user_id=s.user_id) }}">
+                            <i class="bi bi-{% if s.is_active %}x-circle{% else %}check-circle{% endif %}"></i>
+                        </button>
+
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+
+        </table>
+    </div>
+
+    {% if students_pagination and students_pagination.pages > 1 %}
+    <div class="d-flex justify-content-between align-items-center mt-3 px-2">
+
+        <div class="text-muted small">
+            Showing {{ students_pagination.per_page * (students_pagination.page - 1) + 1 }}
+            to {{ [students_pagination.per_page * students_pagination.page, students_pagination.total] | min }}
+            of {{ students_pagination.total }} students
+        </div>
+
+        <ul class="pagination pagination-sm mb-0">
+
+            <li class="page-item {% if not students_pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link"
+                   href="{% if students_pagination.has_prev %}{{ url_for('admin_total_students', page=students_pagination.prev_num, per_page=students_pagination.per_page) }}{% else %}#{% endif %}">
+                    <i class="bi bi-chevron-left"></i>
+                </a>
+            </li>
+
+            {% for page_num in range(1, students_pagination.pages + 1) %}
+                {% if page_num == students_pagination.page %}
+                    <li class="page-item active">
+                        <a class="page-link"
+                           href="{{ url_for('admin_total_students', page=page_num, per_page=students_pagination.per_page) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                {% elif page_num == students_pagination.page + 1 %}
+                    <li class="page-item">
+                        <a class="page-link"
+                           href="{{ url_for('admin_total_students', page=page_num, per_page=students_pagination.per_page) }}">
+                            {{ page_num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            <li class="page-item {% if not students_pagination.has_next %}disabled{% endif %}">
+                <a class="page-link"
+                   href="{% if students_pagination.has_next %}{{ url_for('admin_total_students', page=students_pagination.next_num, per_page=students_pagination.per_page) }}{% else %}#{% endif %}">
+                    <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+
+        </ul>
+    </div>
+    {% endif %}
+</div>
+
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add New Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+->
+      <form action="{{ url_for('total_add_students') }}" method="post">
+        <div class="modal-body">
+
+          <div class="row g-3">
+
+            <div class="col-md-12">
+              <label class="form-label">Full Name</label>
+              <input type="text" name="full_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-select" required>
+                <option value="">-- Select --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Class</label>
+              <select name="class_id" class="form-select">
+                <option value="">-- None --</option>
+                {% for c in available_classes %}
+                <option value="{{ c.class_id }}">{{ c.class_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="email" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" name="phone" class="form-control">
+            </div>
+
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Student</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="editUserForm" action="#" method="post">
+        <div class="modal-body">
+
+          <input type="hidden" name="user_id" id="editUserId">
+
+          <div class="row g-3">
+
+            <div class="col-md-12">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="editName" name="full_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select id="editGender" name="gender" class="form-select" required>
+                <option value="">-- Select --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Class</label>
+              <select id="editClassId" name="class_id" class="form-select">
+                <option value="">-- None --</option>
+                {% for c in available_classes %}
+                <option value="{{ c.class_id }}">{{ c.class_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" id="editEmail" name="email" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Phone</label>
+              <input type="text" id="editPhone" name="phone" class="form-control">
+            </div>
+
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-primary">Update</button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toggle Status Modal (Modern Style for Students) -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title d-flex gap-2">
+          <i class="bi bi-exclamation-triangle-fill text-warning fs-4"></i>
+          <span>Confirm Action</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <form id="toggleStatusForm" method="post">
+        <div class="modal-body pt-2">
+
+          <div class="alert alert-light border d-flex gap-3">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+
+            <div>
+              <p class="mb-2">
+                Are you sure you want to
+                <strong id="statusAction">deactivate</strong>
+                <strong id="statusUserName"></strong>?
+              </p>
+
+              <ul class="small text-muted mb-0">
+                <li>This student will no longer be able to log in</li>
+                <li>Their data remains preserved</li>
+                <li>You can reactivate anytime</li>
+              </ul>
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+
+          <button type="submit" id="statusConfirmBtn" class="btn btn-danger">
+            <i class="bi bi-check-circle"></i> Confirm
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const num = v => Number(v || 0);
+    const arr = v => v || [];
+
+    function animateValue(id, end, duration = 1200) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        let startTime = null;
+        function update(ts) {
+            if (!startTime) startTime = ts;
+            const progress = Math.min((ts - startTime) / duration, 1);
+            el.textContent = Math.floor(progress * end);
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    animateValue("totalStudents", num("{{ total_students }}"));
+    animateValue("maleStudents", num("{{ total_male_students }}"));
+    animateValue("femaleStudents", num("{{ total_female_students }}"));
+    animateValue("newStudents", num("{{ new_students_month }}"));
+
+    const defaultOptions = { responsive:true, maintainAspectRatio:false };
+
+    new Chart(document.getElementById("genderChart"), {
+        type:"doughnut",
+        data:{
+            labels:["Male","Female"],
+            datasets:[{
+                data:[num("{{ total_male_students }}"), num("{{ total_female_students }}")],
+                backgroundColor:["#2563eb","#d946ef"]
+            }]
+        },
+        options:defaultOptions
+    });
+
+    new Chart(document.getElementById("classChart"), {
+        type:"bar",
+        data:{
+            labels:arr({{ class_labels|tojson }}),
+            datasets:[{
+                label:"Students",
+                data:arr({{ class_values|tojson }}),
+                backgroundColor:"#6366f1"
+            }]
+        },
+        options:{
+          ...defaultOptions,
+          scales:{
+              y:{
+                  beginAtZero: true,
+                  ticks: {
+                      stepSize: 10  
+                  },
+                  suggestedMax: 40 
+              }
+          }
+      }
+
+    });
+
+    new Chart(document.getElementById("passFailChart"), {
+        type:"doughnut",
+        data:{
+            labels:["Pass","Fail"],
+            datasets:[{
+                data:[num("{{ pass_rate }}"), num("{{ fail_rate }}")],
+                backgroundColor:["#10b981","#ef4444"]
+            }]
+        },
+        options:defaultOptions
+    });
+
+    new Chart(document.getElementById("trendChart"), {
+        type:"line",
+        data:{
+            labels:arr({{ trend_labels|tojson }}),
+            datasets:[{
+                label:"New Students",
+                data:arr({{ trend_values|tojson }}),
+                borderColor:"#0ea5e9",
+                borderWidth:3,
+                tension:0.35,
+                fill:false
+            }]
+        },
+        options:{ ...defaultOptions, plugins:{ legend:{ display:false } } }
+    });
+
+    // SEARCH FILTER
+    document.getElementById("globalSearch").addEventListener("input", function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll("#studentsTable tbody tr").forEach(row => {
+            row.style.display = row.innerText.toLowerCase().includes(q) ? "" : "none";
+        });
+    });
+
+    // PER PAGE
+    document.getElementById("perPageSelect").addEventListener("change", function () {
+        const url = new URL(window.location);
+        url.searchParams.set("per_page", this.value);
+        url.searchParams.set("page", "1");
+        window.location.href = url.toString();
+    });
+
+    // EDIT USER MODAL
+    document.body.addEventListener("click", e => {
+        const btn = e.target.closest(".edit-user");
+        if (!btn) return;
+
+        document.getElementById("editUserId").value = btn.dataset.userId;
+        document.getElementById("editName").value = btn.dataset.name;
+        document.getElementById("editEmail").value = btn.dataset.email;
+        document.getElementById("editPhone").value = btn.dataset.phone;
+
+        document.getElementById("editGender").value = btn.dataset.gender || "";
+        document.getElementById("editClassId").value = btn.dataset.classId || "";
+
+        document.getElementById("editUserForm").action =
+            `/admin/total_edit_student/${btn.dataset.userId}`;
+    });
+
+    // Toggle status modal fill
+    document.body.addEventListener("click", e => {
+        const btn = e.target.closest(".toggle-status-btn");
+        if (!btn) return;
+
+        const name = btn.dataset.name;
+        const isActive = btn.dataset.currentStatus === "1";
+
+        document.getElementById("statusUserName").textContent = name;
+        document.getElementById("statusAction").textContent =
+            isActive ? "deactivate" : "activate";
+
+        document.getElementById("statusConfirmBtn").className =
+            "btn btn-" + (isActive ? "danger" : "success");
+
+        document.getElementById("toggleStatusForm").action =
+            btn.dataset.action;
+    });
+});
+</script>
+
+{% endblock %}
