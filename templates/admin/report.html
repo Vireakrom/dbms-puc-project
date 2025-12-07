@@ -329,7 +329,7 @@
 
     <form id="reportForm">
         <div class="filter-row">
-            <select class="filter-select" id="gradeFilter" name="grade">
+            <select class="filter-select" id="gradeFilter" name="grade" onchange="updateClassesForGrade()">
                 <option value="" {% if filters.grade=='' %}selected{% endif %}>All Grades</option>
                 <option value="7" {% if filters.grade=='7' %}selected{% endif %}>Grade 7</option>
                 <option value="8" {% if filters.grade=='8' %}selected{% endif %}>Grade 8</option>
@@ -339,7 +339,8 @@
             <select class="filter-select" id="classFilter" name="class">
                 <option value="" {% if filters.class=='' %}selected{% endif %}>All Classes</option>
                 {% for class in classes %}
-                <option value="{{ class.class_name }}" {% if filters.class==class.class_name %}selected{% endif %}>Class
+                <option value="{{ class.class_name }}" data-grade="{{ class.grade_level }}" {% if
+                    filters.class==class.class_name %}selected{% endif %}>Class
                     {{ class.class_name }}</option>
                 {% endfor %}
             </select>
@@ -564,6 +565,56 @@
     // Store chart instances to prevent multiple creations
     let performanceChartInstance = null;
     let subjectChartInstance = null;
+
+    // Update class dropdown based on selected grade
+    function updateClassesForGrade() {
+        const gradeSelect = document.getElementById('gradeFilter');
+        const classSelect = document.getElementById('classFilter');
+        const selectedGrade = gradeSelect.value;
+
+        // Reset class filter
+        classSelect.innerHTML = '<option value="">All Classes</option>';
+
+        if (!selectedGrade) {
+            // If no grade selected, show all classes
+            fetch(`/admin/report/get-classes-by-grade?grade=`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.classes && data.classes.length > 0) {
+                        data.classes.forEach(classObj => {
+                            const option = document.createElement('option');
+                            option.value = classObj.class_name;
+                            option.textContent = `Class ${classObj.class_name}`;
+                            option.setAttribute('data-grade', classObj.grade_level);
+                            classSelect.appendChild(option);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching classes:', error));
+        } else {
+            // Fetch classes for the selected grade via API
+            fetch(`/admin/report/get-classes-by-grade?grade=${encodeURIComponent(selectedGrade)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.classes && data.classes.length > 0) {
+                        data.classes.forEach(classObj => {
+                            const option = document.createElement('option');
+                            option.value = classObj.class_name;
+                            option.textContent = `Class ${classObj.class_name}`;
+                            option.setAttribute('data-grade', selectedGrade);
+                            classSelect.appendChild(option);
+                        });
+                    } else {
+                        const noOption = document.createElement('option');
+                        noOption.value = '';
+                        noOption.textContent = 'No classes available for this grade';
+                        noOption.disabled = true;
+                        classSelect.appendChild(noOption);
+                    }
+                })
+                .catch(error => console.error('Error fetching classes:', error));
+        }
+    }
 
     // Initialize charts only once when DOM is ready
     document.addEventListener('DOMContentLoaded', function () {

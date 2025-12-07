@@ -400,6 +400,27 @@ def admin_grade():
     return redirect(url_for("admin_manage_grades"))
 
 #region Vireak
+@app.route("/admin/report/get-classes-by-grade")
+def get_classes_by_grade():
+    """API endpoint to fetch classes for a specific grade or all classes"""
+    if not is_logged_in() or session.get("role_id") != 1:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    grade = request.args.get('grade', '').strip()
+    
+    with app.app_context():
+        if grade:
+            # Fetch classes for the selected grade
+            classes = Class.query.filter_by(grade_level=grade, is_active=1).order_by(Class.class_name).all()
+        else:
+            # Fetch all classes
+            classes = Class.query.filter_by(is_active=1).order_by(Class.grade_level, Class.class_name).all()
+        
+        return jsonify({
+            'classes': [{'class_id': c.class_id, 'class_name': c.class_name, 'grade_level': c.grade_level} for c in classes]
+        })
+
+
 @app.route("/admin/report")
 def admin_report():
     if not is_logged_in() or session.get("role_id") != 1:
