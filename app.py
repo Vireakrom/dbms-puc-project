@@ -114,32 +114,6 @@ def login():
     return render_template("login.html", username=username, errors=errors)
 
 
-@app.route("/signup", methods=["GET", "POST"])
-def signup():
-    errors = {"username": "", "password": ""}
-
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-
-        errors["username"] = validate_username(username)
-        errors["password"] = validate_password(password)
-
-        if not errors["username"] and not errors["password"]:
-            with app.app_context():
-                if User.query.filter(User.username == username).first():
-                    errors["username"] = "Username already taken."
-                else:
-                    hashed = generate_password_hash(password)
-                    u = User(username=username, password=hashed, full_name="New User", email="email@example.com", role_id=3, is_active=1, force_password_change=0)
-                    db.session.add(u)
-                    db.session.commit()
-                    flash("Account created successfully!", "success")
-                    return redirect(url_for("login"))
-
-    return render_template("signup.html", errors=errors)
-
-
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
     message = ""
@@ -1998,28 +1972,28 @@ def teacher_dashboard():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
     # Use the existing teacher dashboard template
-    return render_template("teacher/dashboard.html")
+    return render_template("teacher/dashboard.html", active_page="dashboard")
 
 
 @app.route("/teacher/students")
 def teacher_students():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/students.html")
+    return render_template("teacher/students.html", active_page="students")
 
 
 @app.route("/teacher/report")
 def teacher_report():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/report.html")
+    return render_template("teacher/report.html", active_page="report")
 
 
 @app.route("/teacher/test_creation")
 def teacher_test_creation():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/test_creation.html")
+    return render_template("teacher/test_creation.html", active_page="tests")
 
 
 @app.route("/teacher/grade")
@@ -2027,7 +2001,7 @@ def teacher_grade():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
     # Render the available grades page (template is named grades.html)
-    return render_template("teacher/grades.html")
+    return render_template("teacher/grades.html", active_page="grade")
 
 
 @app.route("/student")

@@ -2,7 +2,7 @@
   .header {
     height: 60px;
     background: #2c3e50;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -11,8 +11,8 @@
     top: 0;
     z-index: 100;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto,
-                 "Helvetica Neue", Arial, "Noto Sans", 
-                 "Liberation Sans", sans-serif;
+      "Helvetica Neue", Arial, "Noto Sans",
+      "Liberation Sans", sans-serif;
   }
 
   .header-left {
@@ -46,6 +46,95 @@
   .header-right i:hover {
     color: #00a8ff;
   }
+
+  /* Logout modal */
+  .logout-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .logout-backdrop.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .logout-modal {
+    background: #fff;
+    border-radius: 12px;
+    width: 360px;
+    max-width: 90vw;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+    overflow: hidden;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  .logout-modal-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    background: linear-gradient(90deg, #2c3e50, #1f2d3a);
+    color: #fff;
+  }
+
+  .logout-modal-header i {
+    font-size: 20px;
+  }
+
+  .logout-modal-body {
+    padding: 18px;
+    color: #2d3436;
+    line-height: 1.5;
+  }
+
+  .logout-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 18px 18px;
+    background: #f6f8fb;
+  }
+
+  .btn-ghost {
+    border: 1px solid #cfd6dd;
+    background: #fff;
+    color: #2c3e50;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .btn-ghost:hover {
+    border-color: #00a8ff;
+    color: #00a8ff;
+  }
+
+  .btn-primary {
+    border: none;
+    background: linear-gradient(90deg, #00a8ff, #1abc9c);
+    color: #fff;
+    padding: 9px 14px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0, 168, 255, 0.32);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0, 168, 255, 0.36);
+  }
 </style>
 
 <div class="header">
@@ -58,9 +147,79 @@
   <div class="header-right">
     <i class="bi bi-bell"></i>
     <i class="bi bi-gear"></i>
-    <a href="{{ url_for('logout') }}" style="color:#00a8ff; text-decoration:none;">
+    <a href="{{ url_for('logout') }}" class="logout-link" style="color:#00a8ff; text-decoration:none;">
       <i class="bi bi-box-arrow-right"></i>
     </a>
   </div>
 
 </div>
+
+<div id="logout-backdrop" class="logout-backdrop" aria-hidden="true">
+  <div class="logout-modal" role="dialog" aria-modal="true" aria-labelledby="logout-title">
+    <div class="logout-modal-header">
+      <i class="bi bi-box-arrow-right"></i>
+      <div>
+        <div id="logout-title" style="font-size:16px; font-weight:700;">Ready to leave?</div>
+        <div style="font-size:13px; opacity:0.85;">You will be signed out of TeachTracker.</div>
+      </div>
+    </div>
+    <div class="logout-modal-body">
+      Are you sure you want to log out?
+    </div>
+    <div class="logout-modal-actions">
+      <button type="button" class="btn-ghost" data-logout-cancel>Stay Logged In</button>
+      <button type="button" class="btn-primary" data-logout-confirm>Log Out</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function setupLogoutModal() {
+    const backdrop = document.getElementById('logout-backdrop');
+    const confirmBtn = backdrop?.querySelector('[data-logout-confirm]');
+    const cancelBtn = backdrop?.querySelector('[data-logout-cancel]');
+    let pendingHref = null;
+
+    function openModal(href) {
+      pendingHref = href;
+      backdrop.classList.add('show');
+      backdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      backdrop.classList.remove('show');
+      backdrop.setAttribute('aria-hidden', 'true');
+      pendingHref = null;
+    }
+
+    function bindLinks() {
+      document.querySelectorAll('.logout-link').forEach(link => {
+        if (link.dataset.confirmBound === '1') return;
+        link.dataset.confirmBound = '1';
+        link.addEventListener('click', evt => {
+          evt.preventDefault();
+          openModal(link.getAttribute('href'));
+        });
+      });
+    }
+
+    confirmBtn?.addEventListener('click', () => {
+      if (pendingHref) window.location.href = pendingHref;
+    });
+
+    cancelBtn?.addEventListener('click', closeModal);
+
+    backdrop?.addEventListener('click', evt => {
+      if (evt.target === backdrop) closeModal();
+    });
+
+    document.addEventListener('keydown', evt => {
+      if (evt.key === 'Escape') closeModal();
+    });
+
+    // Initial bind + rebinding if new nodes are added dynamically
+    bindLinks();
+    const observer = new MutationObserver(bindLinks);
+    observer.observe(document.body, { childList: true, subtree: true });
+  })();
+</script>

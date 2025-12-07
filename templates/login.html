@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Login | TeachTracker LMS</title>
@@ -29,7 +30,8 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
     }
 
-    .login-box, .welcome-box {
+    .login-box,
+    .welcome-box {
       width: 50%;
       padding: 40px;
       display: flex;
@@ -40,8 +42,9 @@
     .login-box {
       background-color: #fff;
     }
+
     .login-box h2 {
-    text-align: center;
+      text-align: center;
     }
 
 
@@ -93,7 +96,8 @@
       font-weight: 500;
     }
 
-    input[type="text"], input[type="password"] {
+    input[type="text"],
+    input[type="password"] {
       width: 100%;
       padding: 10px;
       margin: 8px 0 15px;
@@ -105,14 +109,14 @@
 
     input:focus {
       border-color: #00a8ff;
-      box-shadow: 0 0 5px rgba(0,168,255,0.4);
+      box-shadow: 0 0 5px rgba(0, 168, 255, 0.4);
     }
 
-    /* Unified button styling for Login & Sign Up */
-    button,
-    .btn-light {
+    /* Button styling */
+    button {
       width: 100%;
-      height: 45px; /* same height */
+      height: 45px;
+      /* same height */
       padding: 10px;
       font-size: 16px;
       border-radius: 8px;
@@ -130,18 +134,6 @@
 
     button:hover {
       background-color: #0097e6;
-    }
-
-    /* Secondary Sign-Up button */
-    .btn-light {
-      background-color: #ffffff;
-      border: none;
-      color: #0097e6;
-    }
-
-    .btn-light:hover {
-      background-color: #e3f2fd;
-      color: #007acc;
     }
 
     .password-wrapper {
@@ -187,7 +179,8 @@
         height: auto;
       }
 
-      .login-box, .welcome-box {
+      .login-box,
+      .welcome-box {
         width: 100%;
         padding: 30px;
       }
@@ -201,61 +194,58 @@
 </head>
 
 <body>
-<div class="auth-container">
-  <!-- Left side: login -->
-  <div class="login-box">
-    <h2>Login</h2>
-    <form method="POST" action="/" novalidate>
-      <label for="username">Username</label>
-      <input type="text" id="username" name="username" placeholder="Username"
-             value="{{ username or '' }}" required>
-      {% if errors and errors.username %}
+  <div class="auth-container">
+    <!-- Left side: login -->
+    <div class="login-box">
+      <h2>Login</h2>
+      <form method="POST" action="/" novalidate>
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Username" value="{{ username or '' }}" required>
+        {% if errors and errors.username %}
         <p class="error">{{ errors.username }}</p>
-      {% endif %}
-      
-      <label for="password">Password</label>
-      <div class="password-wrapper">
-        <input type="password" id="password" name="password" placeholder="Password" autocomplete="off" required>
-        <i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
-      </div>
-      {% if errors and errors.password %}
-        <p class="error">{{ errors.password }}</p>
-      {% endif %}
-      
-      <button type="submit">Login</button>
-    </form>
+        {% endif %}
 
-    <div class="options">
-      <label><input type="checkbox"> Remember Me</label>
-      <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+        <label for="password">Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" name="password" placeholder="Password" autocomplete="off" required>
+          <i class="bi bi-eye-slash toggle-password" id="togglePassword"></i>
+        </div>
+        {% if errors and errors.password %}
+        <p class="error">{{ errors.password }}</p>
+        {% endif %}
+
+        <button type="submit">Login</button>
+      </form>
+
+      <div class="options">
+        <label><input type="checkbox"> Remember Me</label>
+        <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+      </div>
+    </div>
+
+    <!-- Right side: enlarged logo section -->
+    <div class="welcome-box">
+      <img src="{{ url_for('static', filename='img/Logo_No_BG.png') }}" alt="TeachTracker LMS Logo">
+      <h2>TeachTracker LMS</h2>
+      <p>Accounts are provisioned by your administrator. Contact them if you need access.</p>
     </div>
   </div>
 
-  <!-- Right side: enlarged logo section -->
-  <div class="welcome-box">
-    <img src="{{ url_for('static', filename='img/Logo_No_BG.png') }}" alt="TeachTracker LMS Logo">
-    <h2>TeachTracker LMS</h2>
-    <p>Don’t have an account?</p>
-    <a href="{{ url_for('signup') }}">
-      <button type="button" class="btn-light">Sign Up</button>
-    </a>
-  </div>
-</div>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Bootstrap JS -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Password Toggle Script -->
+  <script>
+    const togglePassword = document.getElementById("togglePassword");
+    const passwordInput = document.getElementById("password");
 
-<!-- Password Toggle Script -->
-<script>
-  const togglePassword = document.getElementById("togglePassword");
-  const passwordInput = document.getElementById("password");
-
-  togglePassword.addEventListener("click", () => {
-    const type = passwordInput.type === "password" ? "text" : "password";
-    passwordInput.type = type;
-    togglePassword.classList.toggle("bi-eye");
-    togglePassword.classList.toggle("bi-eye-slash");
-  });
-</script>
+    togglePassword.addEventListener("click", () => {
+      const type = passwordInput.type === "password" ? "text" : "password";
+      passwordInput.type = type;
+      togglePassword.classList.toggle("bi-eye");
+      togglePassword.classList.toggle("bi-eye-slash");
+    });
+  </script>
 </body>
+
 </html>
