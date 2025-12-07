@@ -1,0 +1,326 @@
+{% extends "teacher/base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Grades Report</title>
+    <!-- Bootstrap and Icons for a clean look -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- NO Firebase Imports are needed now -->
+
+    <style>
+        /* General Styling */
+        :root {
+            --primary-color: #4a6cf7;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+            --secondary-bg: #f7f8ff;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7fa;
+            padding: 20px;
+        }
+
+        /* Report Header */
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0;
+            font-size: 1.8rem;
+        }
+
+        /* General Table Styling */
+        .grades-table {
+            width: 100%;
+            /* Use full container width */
+            max-width: 900px;
+            /* Adjusted top margin to fit layout change */
+            margin: 20px auto 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: white;
+        }
+
+        /* Table Header Styling */
+        .grades-table th {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        /* Table Data Cell Styling */
+        .grades-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+            transition: background-color 0.2s ease;
+        }
+
+        /* Zebra-Striping (Alternating row colors) */
+        .grades-table tr:nth-child(even) {
+            background-color: var(--secondary-bg);
+        }
+
+        /* Hover Effect */
+        .grades-table tr:hover {
+            background-color: #c5cae9;
+            cursor: default;
+        }
+
+        /* Specific Grade Column Styling */
+        .grades-table td:nth-child(4) {
+            font-weight: bold;
+        }
+
+        /* Grade Color Coding */
+        .high-grade {
+            color: var(--success-color);
+        }
+
+        .low-grade {
+            color: var(--error-color);
+            background-color: #fce4e4;
+        }
+
+        /* Custom Search Bar Styling for the pill shape */
+        .search-input-group {
+            max-width: 300px;
+            border-radius: 50px;
+            /* Pill shape */
+            overflow: hidden;
+            border: 1px solid #ced4da;
+            transition: border-color 0.2s;
+        }
+
+        .search-input-group:focus-within {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(74, 108, 247, 0.25);
+        }
+
+        .search-input-group .input-group-text,
+        .search-input-group .form-control {
+            border: none;
+            background-color: white;
+        }
+
+        /* Responsive adjustments for header controls */
+        @media (max-width: 768px) {
+            .header-controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .header-controls>* {
+                width: 100%;
+                margin: 0 !important;
+            }
+
+            h1 {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div style="max-width: 900px; margin: 0 auto;">
+            <!-- Row 1: H1 (Left) & Export Button (Right) -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="me-4"><i class="bi bi-bar-chart-fill"></i>Report</h1>
+
+                <!-- Export Button -->
+                <button class="btn btn-success rounded-pill" onclick="handleExport()">
+                    <i class="bi bi-file-earmark-spreadsheet-fill"></i> Export to CSV
+                </button>
+            </div>
+
+            <!-- Row 2: Search Input (Centered) -->
+            <div class="d-flex justify-content-center mb-4">
+                <div class="input-group search-input-group">
+                    <span class="input-group-text"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="nameSearch" class="form-control" placeholder="Search student name..."
+                        oninput="loadGrades()">
+                    <!-- Clear Button - Hidden by default -->
+                    <button class="btn btn-sm btn-light" id="clearSearchBtn" onclick="clearSearch()"
+                        style="display:none;">
+                        <i class="bi bi-x-circle-fill text-danger"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="grades-table">
+                <thead>
+                    <tr>
+                        <th>Entry ID</th>
+                        <th>Student Name</th>
+                        <th>Test</th>
+                        <th>Grade</th>
+                    </tr>
+                </thead>
+                <tbody id="gradesTableBody">
+                    <!-- Data will be loaded here by JavaScript -->
+                    <tr>
+                        <td colspan="4" class="text-center text-muted p-5">No grades recorded yet. The report is empty.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+    <script>
+        // --- LOCAL DATA STORE ---
+        // Sample data removed. The report now starts empty.
+        let gradesData = [];
+
+
+        // --- Data Loading and Rendering ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadGrades();
+        });
+
+        /**
+         * Filters, sorts, and renders the grades from the local gradesData array.
+         */
+        function loadGrades() {
+            const searchInput = document.getElementById('nameSearch');
+            const clearBtn = document.getElementById('clearSearchBtn');
+            const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+            // Toggle clear button visibility
+            clearBtn.style.display = searchTerm ? 'block' : 'none';
+
+            let filteredGrades = gradesData.filter(g =>
+                // Filter by student name (case-insensitive)
+                g.name.toLowerCase().includes(searchTerm)
+            );
+
+            // Sort filtered grades by name and then test title
+            filteredGrades.sort((a, b) => {
+                if (a.name < b.name) return -1;
+                if (a.name > b.name) return 1;
+                return a.title.localeCompare(b.title);
+            });
+
+            renderGrades(filteredGrades);
+        }
+
+        /**
+         * Resets the search input and reloads the full list of grades.
+         */
+        function clearSearch() {
+            document.getElementById('nameSearch').value = '';
+            loadGrades();
+        }
+
+        /**
+         * Renders the list of grades into the table body.
+         * @param {Array} grades - Array of grade objects {id, name, title, grade}.
+         */
+        function renderGrades(grades) {
+            const tableBody = document.getElementById("gradesTableBody");
+            tableBody.innerHTML = ""; // Clear existing content
+
+            if (grades.length === 0) {
+                const message = document.getElementById('nameSearch').value.trim() !== ''
+                    ? "No students found matching your search criteria."
+                    : "No grades recorded yet. The report is empty.";
+
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted p-5">
+            ${message}
+            </td></tr>`;
+                return;
+            }
+
+            grades.forEach((g) => {
+                const gradeValue = parseInt(g.grade);
+                let gradeClass = '';
+                if (gradeValue >= 90) {
+                    gradeClass = 'high-grade';
+                } else if (gradeValue < 60) {
+                    gradeClass = 'low-grade';
+                }
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+            <td><code>${g.id.substring(0, 8)}...</code></td>
+            <td><strong>${g.name || 'N/A'}</strong></td>
+            <td>${g.title || 'N/A'}</td>
+            <td class="${gradeClass}">${g.grade}</td>
+        `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // --- Export CSV Logic ---
+
+        function handleExport() {
+            if (gradesData.length === 0) {
+                // Fail silently if no data to export
+                return;
+            }
+
+            // 1. Define CSV header
+            const headers = ["Entry ID", "Student Name", "Test", "Grade"];
+            const headerRow = headers.join(',');
+
+            // 2. Map gradesData to CSV rows
+            const csvRows = gradesData.map(g => {
+                // Use JSON.stringify for safe quoting, then trim the quotes for readability (safer than simple quoting)
+                const name = JSON.stringify(g.name).replace(/\"/g, '');
+                const title = JSON.stringify(g.title).replace(/\"/g, '');
+
+                return [
+                    g.id,
+                    name,
+                    title,
+                    g.grade
+                ].join(',');
+            });
+
+            // 3. Combine header and rows
+            const csvContent = [headerRow, ...csvRows].join('\n');
+
+            // 4. Create and trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "student_grades_report.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Attach functions to the global scope
+        window.handleExport = handleExport;
+        window.clearSearch = clearSearch;
+    </script>
+
+</body>
+
+</html>
+
+
+{% endblock %}

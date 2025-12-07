@@ -1,0 +1,543 @@
+{% extends "teacher/base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Test - Teacher Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            /* Tailwind indigo-600 */
+            --accent-border: #e5e7eb;
+            /* Gray-200 */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            /* bg-gray-50 */
+            color: #1f2937;
+            /* text-gray-800 */
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .page-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 1.5rem;
+        }
+
+        .muted {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #4b5563;
+            /* Gray-600 */
+            margin-bottom: 0.25rem;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid #d1d5db;
+            /* Gray-300 */
+            border-radius: 0.5rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 1px var(--primary);
+            outline: none;
+        }
+
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .btn {
+            padding: 0.6rem 1.25rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: 1px solid var(--primary);
+            box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-primary:hover {
+            background-color: #3730a3;
+            /* Indigo-700 */
+        }
+
+        .btn-soft {
+            background-color: #eef2ff;
+            /* Indigo-50 */
+            color: var(--primary);
+            border: 1px solid #c7d2fe;
+            /* Indigo-200 */
+        }
+
+        .btn-soft:hover {
+            background-color: #e0e7ff;
+            /* Indigo-100 */
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #ef4444;
+            /* Red-500 */
+            padding: 0.25rem 0.5rem;
+        }
+
+        .btn-ghost:hover {
+            background-color: #fef2f2;
+            /* Red-50 */
+        }
+
+        .question-card {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+
+<body class="p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto">
+
+        <div class="page-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-square-pen text-indigo-600">
+                <path d="M12 20h9" />
+                <path d="M16 4l2 2m-2-2L4 16v3h3L18 8l-2-2z" />
+            </svg>
+            Test Creation
+        </div>
+        <p class="text-gray-500 mb-6">Fill out the details below to schedule and structure a new test.</p>
+
+        <div class="card">
+            <form id="test-form" onsubmit="return false;" class="space-y-6">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-3">
+                        <label class="muted" for="test-title">Test Name / Topic</label>
+                        <input type="text" id="test-title" name="title" placeholder="E.g. Term 1 Math Quiz" required>
+                    </div>
+
+                    <div>
+                        <label class="muted" for="test-subject">Subject</label>
+                        <select id="test-subject" name="subject" required>
+                            <option value="" disabled selected>Choose subject</option>
+                            <option>ICT</option>
+                            <option>English</option>
+                            <option>History</option>
+                            <option>Geography</option>
+                            <option>Physics</option>
+                            <option>Biology</option>
+                            <option>Chemistry</option>
+                            <option>Math</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="muted" for="test-class">Class</label>
+                        <select id="test-class" name="class" required>
+                            <option value="" disabled selected>Choose class</option>
+                            <option>Class 7A</option>
+                            <option>Class 7B</option>
+                            <option>Class 7C</option>
+                            <option>Class 8A</option>
+                            <option>Class 8B</option>
+                            <option>Class 8C</option>
+                            <option>Class 9A</option>
+                            <option>Class 9B</option>
+                            <option>Class 9C</option>
+
+                        </select>
+                    </div>
+                    <div>
+                        <label class="muted" for="test-duration">Duration (Minutes)</label>
+                        <input type="number" class="form-control" id="test-duration" name="duration" min="10" max="300"
+                            placeholder="60" required>
+                    </div>
+
+                    <div class="md:col-span-3 grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="muted" for="test-date">Date</label>
+                            <input type="date" class="form-control" id="test-date" name="testDate" required>
+                        </div>
+                        <div>
+                            <label class="muted" for="test-time">Time</label>
+                            <input type="time" class="form-control" id="test-time" name="testTime" required>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border:none;border-top:1px solid var(--accent-border);margin:12px 0 18px;">
+
+                <h3 class="text-xl font-semibold text-gray-700 mb-4">Questions</h3>
+
+                <div id="questions-wrapper">
+                    <div class="question-card bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="muted text-base font-semibold text-indigo-700">Question 1</label>
+                        </div>
+
+                        <textarea name="q_1" placeholder="Type your multiple-choice question here..."
+                            required></textarea>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                            <input name="q1_a" placeholder="A: Option Text" type="text" required>
+                            <input name="q1_b" placeholder="B: Option Text" type="text" required>
+                            <input name="q1_c" placeholder="C: Option Text" type="text" required>
+                            <input name="q1_d" placeholder="D: Option Text" type="text" required>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap items-center gap-4">
+                            <label class="muted whitespace-nowrap min-w-[110px] text-sm">Correct Answer</label>
+                            <select name="q1_correct" class="w-[100px] text-sm">
+                                <option>A</option>
+                                <option>B</option>
+                                <option>C</option>
+                                <option>D</option>
+                            </select>
+                            <button type="button" class="btn btn-ghost text-red-600 remove-q-btn"
+                                onclick="this.closest('.question-card').remove()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="lucide lucide-trash-2 inline-block mr-1">
+                                    <path d="M3 6h18" />
+                                    <path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6" />
+                                    <path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2" />
+                                    <line x1="10" x2="10" y1="11" y2="17" />
+                                    <line x1="14" x2="14" y1="11" y2="17" />
+                                </svg>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4 justify-end">
+                    <button type="button" class="btn btn-soft flex items-center" id="add-q">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-plus-circle mr-1">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 8v8" />
+                            <path d="M8 12h8" />
+                        </svg>
+                        Add Question
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="lucide lucide-send-fill mr-1">
+                            <path d="m22 2-7 20-4-9-9-4Z" />
+                            <path d="M22 2 11 13" />
+                        </svg>
+                        Save Test
+                    </button>
+                </div>
+            </form>
+            <div id="status-message" class="mt-4 p-3 rounded-lg text-center font-semibold hidden"></div>
+        </div>
+
+        <div class="mt-10">
+            <h2 class="text-2xl font-bold text-gray-700 mb-4 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-clipboard-check text-indigo-600 mr-2">
+                    <rect width="8" height="4" x="8" y="2" />
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                    <path d="m9 16 2 2 4-4" />
+                </svg>
+                Recently Saved Tests
+            </h2>
+            <div id="saved-tests-wrapper" class="space-y-3">
+                <div id="no-tests-message"
+                    class="p-4 text-center text-gray-500 bg-white rounded-xl shadow-sm border border-gray-200">
+                    No tests saved yet. Create your first one above!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let questionCount = 1;
+        const questionsWrapper = document.getElementById('questions-wrapper');
+        const form = document.getElementById('test-form');
+        const statusMessage = document.getElementById('status-message');
+        const savedTestsWrapper = document.getElementById('saved-tests-wrapper');
+        const noTestsMessage = document.getElementById('no-tests-message');
+
+        // Capture the HTML structure of the first question card as a template string
+        function getQuestionTemplate(count) {
+            return `
+            <div class="question-card bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3">
+                <div class="flex justify-between items-center mb-2">
+                    <label class="muted text-base font-semibold text-indigo-700">Question ${count}</label>
+                </div>
+                
+                <textarea name="q_${count}" placeholder="Type your multiple-choice question here..." required></textarea>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                    <input name="q${count}_a" placeholder="A: Option Text" type="text" required>
+                    <input name="q${count}_b" placeholder="B: Option Text" type="text" required>
+                    <input name="q${count}_c" placeholder="C: Option Text" type="text" required>
+                    <input name="q${count}_d" placeholder="D: Option Text" type="text" required>
+                </div>
+
+                <div class="mt-4 flex flex-wrap items-center gap-4">
+                    <label class="muted whitespace-nowrap min-w-[110px] text-sm">Correct Answer</label>
+                    <select name="q${count}_correct" class="w-[100px] text-sm">
+                        <option>A</option>
+                        <option>B</option>
+                        <option>C</option>
+                        <option>D</option>
+                    </select>
+                    <button type="button" class="btn btn-ghost text-red-600 remove-q-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2 inline-block mr-1"><path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        Remove
+                    </button>
+                </div>
+            </div>`;
+        }
+
+
+        // Function to create a new question card
+        function createNewQuestionCard() {
+            questionCount++;
+            const newCardHtml = getQuestionTemplate(questionCount);
+            questionsWrapper.insertAdjacentHTML('beforeend', newCardHtml);
+
+            // Re-apply removal logic and icon creation
+            const newCard = questionsWrapper.lastElementChild;
+            newCard.querySelector('.remove-q-btn').addEventListener('click', function () {
+                this.closest('.question-card').remove();
+                renumberQuestions();
+            });
+
+            // Re-create icons in the new card
+            lucide.createIcons();
+
+            newCard.scrollIntoView({ behavior: 'smooth' });
+            renumberQuestions();
+        }
+
+        /**
+         * Re-evaluates all question cards, renames them, and updates the global count.
+         * This ensures data integrity after a question is removed.
+         */
+        function renumberQuestions() {
+            const cards = questionsWrapper.querySelectorAll('.question-card');
+            questionCount = cards.length;
+
+            cards.forEach((card, index) => {
+                const newCount = index + 1;
+
+                // 1. Update the Card Title
+                card.querySelector('.muted').textContent = 'Question ' + newCount;
+
+                // 2. Update 'name' attributes for inputs and textarea
+                card.querySelector('textarea').name = 'q_' + newCount;
+
+                // Options and Correct Answer Selector
+                const options = ['a', 'b', 'c', 'd'];
+                options.forEach(option => {
+                    // Use a more robust selector that finds inputs specific to the card
+                    const input = card.querySelector(`input[name*="_${option}"]`);
+                    if (input) {
+                        input.name = `q${newCount}_${option}`;
+                    }
+                });
+
+                const select = card.querySelector('select');
+                if (select) {
+                    select.name = `q${newCount}_correct`;
+                }
+            });
+
+            // If the last card was removed and no cards remain, re-initialize the template
+            if (questionCount === 0) {
+                questionsWrapper.insertAdjacentHTML('beforeend', getQuestionTemplate(1));
+                questionCount = 1;
+                const initialCard = questionsWrapper.lastElementChild;
+                // Note: Must re-attach the listener to the newly created Question 1 remove button
+                initialCard.querySelector('.remove-q-btn').addEventListener('click', function () {
+                    this.closest('.question-card').remove();
+                    renumberQuestions();
+                });
+                lucide.createIcons();
+            }
+        }
+
+
+        /**
+         * Template function to generate HTML for a saved test item.
+         */
+        function createSavedTestItem(data) {
+            // Count how many keys start with 'q_' (e.g., q_1, q_2) to get the number of questions
+            const numQuestions = Object.keys(data).filter(key => key.startsWith('q_')).length;
+
+            const div = document.createElement('div');
+            div.className = 'flex flex-col sm:flex-row items-start sm:items-center p-4 bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition duration-200';
+
+            const scheduledDate = data.testDate ? new Date(data.testDate + 'T00:00:00').toLocaleDateString() : 'N/A';
+
+            div.innerHTML = `
+                <div class="flex-1 min-w-0 pr-4">
+                    <p class="text-lg font-bold text-indigo-700 truncate">${data.title}</p>
+                    <div class="flex flex-wrap items-center gap-x-4 text-sm text-gray-500 mt-1">
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-text mr-1"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="M6 8h2"/><path d="M6 12h2"/><path d="M16 8h2"/><path d="M16 12h2"/></svg>
+                            ${data.subject}
+                        </span>
+                        <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            ${data.class}
+                        </span>
+                           <span class="flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-check mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
+                            ${scheduledDate} @ ${data.testTime}
+                        </span>
+                        <span class="flex items-center text-indigo-500 font-medium">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-help-circle mr-1"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+                            ${numQuestions} Question${numQuestions > 1 ? 's' : ''}
+                        </span>
+                    </div>
+                </div>
+                <button class="btn btn-ghost text-red-600 self-start sm:self-center mt-3 sm:mt-0" onclick="this.closest('div.flex').remove(); recheckEmptyList();">
+                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2 inline-block mr-1"><path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                    Delete
+                </button>
+            `;
+            return div;
+        }
+
+        function recheckEmptyList() {
+            // savedTestsWrapper.children[0] is always the noTestsMessage element
+            // We check if only the noTestsMessage remains
+            if (savedTestsWrapper.children.length === 1 && savedTestsWrapper.firstElementChild.id === 'no-tests-message') {
+                noTestsMessage.classList.remove('hidden');
+            }
+        }
+
+        // Add Question button listener
+        document.getElementById('add-q').addEventListener('click', createNewQuestionCard);
+
+        // Initial setup for the first question's remove button
+        document.addEventListener('DOMContentLoaded', () => {
+            // Attach removal logic to the first card's button
+            const initialRemoveBtn = questionsWrapper.querySelector('.remove-q-btn');
+            if (initialRemoveBtn) {
+                initialRemoveBtn.addEventListener('click', function () {
+                    this.closest('.question-card').remove();
+                    renumberQuestions();
+                });
+            }
+        });
+
+
+        // Submit listener 
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            // Check if there are any questions left
+            if (questionsWrapper.querySelectorAll('.question-card').length === 0) {
+                statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+                statusMessage.textContent = `Error: Please add at least one question to the test.`;
+                setTimeout(() => { statusMessage.classList.add('hidden'); }, 5000);
+                return;
+            }
+
+            const formData = new FormData(form);
+            const data = {};
+
+            // Collect all form data into a structured object
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            // 1. Display saving success status (Simulation)
+            statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+            statusMessage.classList.add('bg-green-100', 'text-green-800');
+            statusMessage.textContent = `Test "${data.title}" saved successfully (Simulation)!`;
+
+            // 2. Add the test to the saved list
+            const newTestItem = createSavedTestItem(data);
+            savedTestsWrapper.prepend(newTestItem); // Add to the top of the list
+
+            // Hide the 'No tests saved yet' message
+            if (noTestsMessage) {
+                noTestsMessage.classList.add('hidden');
+            }
+
+            // 3. Reset the form for the next creation
+            form.reset();
+
+            // Remove all question cards and recreate the first one
+            questionsWrapper.innerHTML = '';
+            questionCount = 0;
+            createNewQuestionCard(); // Creates Question 1 card
+
+            // Re-apply initial listener after reset
+            const initialCard = questionsWrapper.lastElementChild;
+            initialCard.querySelector('.remove-q-btn').addEventListener('click', function () {
+                this.closest('.question-card').remove();
+                renumberQuestions();
+            });
+
+            // Scroll to the new list item
+            savedTestsWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Clear status after a few seconds
+            setTimeout(() => {
+                statusMessage.classList.add('hidden');
+            }, 5000);
+        });
+
+        // Initialize icons on load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            recheckEmptyList();
+        });
+    </script>
+</body>
+
+</html>
+
+{% endblock %}

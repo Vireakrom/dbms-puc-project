@@ -1,0 +1,412 @@
+{% extends "teacher/base.html" %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Pro | Student Management</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font and configure custom colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#446DFF',
+                        'primary-blue-dark': '#3759d6',
+                        'danger-red': '#e74c3c',
+                        'bg-light': '#f4f7f9',
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Base transition for smooth fade effect */
+        .form-container {
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        /* Utility class to hide elements visually and structurally */
+        .hidden-structurally {
+            display: none !important;
+            opacity: 0 !important;
+        }
+
+        /* Desktop Grid Layout Management */
+        .page-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .page-layout {
+                grid-template-columns: 400px 1fr;
+            }
+
+            /* When the form is hidden, the list expands to full width */
+            #addFormContainer.hidden-structurally+.list-container {
+                grid-column: 1 / -1;
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-bg-light p-4 sm:p-8 min-h-screen font-sans">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Main Title -->
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-6">Students</h1>
+
+        <!-- Global Message Box (Only used for errors now) -->
+        <div id="messageBox" class="p-3 mb-5 rounded-lg font-semibold transition duration-300 hidden-structurally">
+        </div>
+
+        <div class="page-layout">
+
+            <!-- Student Form: Starts hidden (using opacity: 0 and display: none via JS manipulation) -->
+            <div id="addFormContainer" class="form-container bg-white p-6 rounded-xl shadow-xl hidden-structurally">
+                <div class="text-xl font-bold mb-4 text-gray-800">Add Student</div>
+
+
+                <form id="addStudentForm" onsubmit="event.preventDefault(); addStudent();" class="space-y-3">
+                    <div>
+                        <label for="studentName" class="block text-sm font-medium text-gray-700 mb-1">Student
+                            Name</label>
+                        <input name="name" id="studentName"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150"
+                            placeholder="Enter student name" required>
+                    </div>
+
+                    <div>
+                        <label for="studentIdInput" class="block text-sm font-medium text-gray-700 mb-1">Student
+                            ID</label>
+                        <input name="student_id" id="studentIdInput"
+                            class="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue transition duration-150"
+                            placeholder="Enter unique student ID (e.g., S1234)" required>
+                    </div>
+
+                    <div>
+                        <label for="classId" class="block text-sm font-medium text-gray-700 mb-1">Select Class</label>
+                        <select name="class_id" id="classId"
+                            class="w-full p-3 border border-gray-300 rounded-lg bg-white focus:ring-primary-blue focus:border-primary-blue transition duration-150"
+                            required>
+                            <option value="">Select a class</option>
+                            <option value="7A">7A</option>
+                            <option value="7B">7B</option>
+                            <option value="7C">7C</option>
+                            <option value="8A">8A</option>
+                            <option value="8B">8B</option>
+                            <option value="8C">8C</option>
+                            <option value="9A">9A</option>
+                            <option value="9B">9B</option>
+                            <option value="9C">9C</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <!-- SUBMIT BUTTON: Enhanced style and loading/disabled state -->
+                        <button type="submit" id="submitBtn"
+                            class="flex-grow py-3 bg-primary-blue text-white font-bold rounded-xl hover:bg-primary-blue-dark transition duration-300 shadow-lg shadow-primary-blue/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Add Student
+                        </button>
+                        <!-- Cancel button to hide form -->
+                        <button type="button" onclick="hideForm()"
+                            class="w-24 py-3 bg-gray-300 text-gray-800 font-bold rounded-xl hover:bg-gray-400 transition duration-200 shadow-md">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Student List -->
+            <div class="list-container bg-white p-6 rounded-xl shadow-xl overflow-x-auto">
+
+                <!-- Search/Add Student Button Row -->
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-3 mb-6">
+                    <input type="text" id="searchNameInput" oninput="handleSearch()"
+                        class="p-3 border border-gray-300 rounded-lg focus:ring-primary-blue focus:border-primary-blue flex-grow w-full sm:w-auto"
+                        placeholder="Search student by name or ID...">
+
+                    <!-- TRIGGER BUTTON: Enhanced style with scale and stronger shadow -->
+                    <button onclick="showFormAndFocus()"
+                        class="py-3 px-6 bg-primary-blue text-white font-bold rounded-xl hover:bg-primary-blue-dark transition duration-300 shadow-xl shadow-primary-blue/30 transform hover:scale-[1.01] w-full sm:w-auto whitespace-nowrap">
+                        <i class="ti ti-plus inline-block align-middle mr-1"></i> Add Student
+                    </button>
+                </div>
+
+                <!-- Table Header (Blue Bar - Custom Grid) -->
+                <div
+                    class="grid grid-cols-[80px_2fr_1fr_120px] items-center bg-primary-blue text-white p-3 rounded-lg font-bold text-left text-sm md:text-base">
+                    <div class="min-w-[50px]">ID</div>
+                    <div>Name</div>
+                    <div>Class</div>
+                    <div class="text-right">Actions</div>
+                </div>
+
+                <div id="studentList" class="mt-2 space-y-2">
+                    <p class="text-center text-gray-500 py-4">Loading students...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Tabler Icons Script for action buttons (optional but nice) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+    <script>
+        const STORAGE_KEY = 'teacherProStudentsLocal';
+        const STUDENT_LIST_ELEMENT = document.getElementById('studentList');
+        const MESSAGE_BOX = document.getElementById('messageBox');
+        const SUBMIT_BUTTON = document.getElementById('submitBtn');
+        const SEARCH_INPUT = document.getElementById('searchNameInput');
+        const ADD_STUDENT_FORM = document.getElementById('addStudentForm');
+
+        // Element reference
+        const FORM_CONTAINER = document.getElementById('addFormContainer');
+        const FADE_DURATION = 300;
+
+        // --- Utility Functions ---
+
+        function showMessage(text, isError = false) {
+            // Hide previous classes and reset text
+            MESSAGE_BOX.textContent = text;
+            MESSAGE_BOX.className = 'p-3 mb-5 rounded-lg font-semibold transition duration-300';
+
+            // Apply error classes
+            if (isError) {
+                MESSAGE_BOX.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-300');
+            } else {
+                // Success messages are generally suppressed as requested by user
+                MESSAGE_BOX.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-300');
+            }
+
+            MESSAGE_BOX.classList.remove('hidden-structurally');
+
+            setTimeout(() => {
+                MESSAGE_BOX.classList.add('hidden-structurally');
+            }, 3000);
+        }
+
+        function generateUniqueId() {
+            // Simple unique ID generator for internal use
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+        }
+
+        // --- Local Storage Functions ---
+
+        function loadStudents() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error("Error loading students from localStorage:", e);
+                showMessage('Failed to load local data.', true);
+                return [];
+            }
+        }
+
+        function saveStudents(students) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+            } catch (e) {
+                console.error("Error saving students to localStorage:", e);
+                showMessage('Failed to save data locally.', true);
+            }
+        }
+
+        // --- Form Visibility Functions ---
+
+        window.showFormAndFocus = function () {
+            // 1. Prepare for display: Remove structural hidden class
+            FORM_CONTAINER.classList.remove('hidden-structurally');
+            FORM_CONTAINER.style.opacity = '0'; // Ensure opacity starts at 0 for fade effect
+
+            // 2. Start fade-in transition
+            setTimeout(() => {
+                FORM_CONTAINER.style.opacity = '1';
+
+                // 3. Scroll and Focus
+                FORM_CONTAINER.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                setTimeout(() => {
+                    document.getElementById('studentName').focus();
+                }, 100);
+
+            }, 10);
+        }
+
+        window.hideForm = function () {
+            // 1. Start the fade-out by setting opacity to 0
+            FORM_CONTAINER.style.opacity = '0';
+
+            // 2. After the transition, re-add the 'hidden-structurally' class to collapse it.
+            setTimeout(() => {
+                FORM_CONTAINER.classList.add('hidden-structurally');
+                FORM_CONTAINER.style.removeProperty('opacity');
+
+                // Scroll back to the top of the main container/list
+                document.querySelector('.max-w-7xl').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, FADE_DURATION);
+        }
+
+        // --- CRUD Operations ---
+
+        window.addStudent = function () {
+            const nameInput = document.getElementById('studentName');
+            const studentIdInput = document.getElementById('studentIdInput');
+            const classInput = document.getElementById('classId');
+
+            const name = nameInput.value.trim();
+            const studentId = studentIdInput.value.trim();
+            const classId = classInput.value;
+
+            if (!name || !classId || !studentId) {
+                showMessage('Please enter student name, ID, and select a class.', true);
+                return;
+            }
+
+            SUBMIT_BUTTON.textContent = 'Adding...';
+            SUBMIT_BUTTON.disabled = true;
+
+            try {
+                const students = loadStudents();
+
+                // Check for duplicate Student ID 
+                if (students.some(s => s.studentId.toLowerCase() === studentId.toLowerCase())) {
+                    showMessage(`Student ID '${studentId}' already exists. Please use a unique ID.`, true);
+                    SUBMIT_BUTTON.textContent = 'Add Student';
+                    SUBMIT_BUTTON.disabled = false;
+                    return;
+                }
+
+                const newStudent = {
+                    id: generateUniqueId(), // Internal system ID
+                    studentId: studentId.toUpperCase(), // User-facing ID, normalized
+                    name: name,
+                    classId: classId,
+                    addedAt: new Date().toISOString(),
+                };
+
+                students.push(newStudent);
+                saveStudents(students);
+
+                // Clear inputs
+                ADD_STUDENT_FORM.reset();
+
+                // Clear search input and re-render the full list
+                SEARCH_INPUT.value = '';
+                handleSearch();
+
+                // Hide the form after success
+                hideForm();
+
+            } catch (e) {
+                console.error("Error adding student: ", e);
+                showMessage('Failed to add student.', true);
+            } finally {
+                SUBMIT_BUTTON.textContent = 'Add Student';
+                SUBMIT_BUTTON.disabled = false;
+            }
+        }
+
+        // Delete function - now directly called by the list button
+        window.deleteStudent = function (studentId) {
+            try {
+                let students = loadStudents();
+                const studentToDelete = students.find(s => s.id === studentId);
+
+                if (!studentToDelete) {
+                    showMessage('Student not found.', true);
+                    return;
+                }
+
+                students = students.filter(s => s.id !== studentId);
+
+                saveStudents(students);
+                // Re-render, applying current search filter if any
+                handleSearch();
+                // No success message shown, as requested
+
+            } catch (e) {
+                console.error("Error removing student: ", e);
+                showMessage('Failed to remove student.', true);
+            }
+        }
+
+        // Search function
+        window.handleSearch = function () {
+            const query = SEARCH_INPUT.value.trim().toLowerCase();
+            const allStudents = loadStudents();
+
+            if (query === '') {
+                renderStudents(allStudents);
+                return;
+            }
+
+            // Filter by name OR studentId
+            const filteredStudents = allStudents.filter(student =>
+                student.name.toLowerCase().includes(query) ||
+                student.studentId.toLowerCase().includes(query)
+            );
+
+            renderStudents(filteredStudents);
+        }
+
+        // --- Render UI ---
+
+        function renderStudents(students) {
+            STUDENT_LIST_ELEMENT.innerHTML = ''; // Clear existing content
+
+            if (students.length === 0) {
+                STUDENT_LIST_ELEMENT.innerHTML = `
+                <div class="text-center text-gray-500 py-6 border border-dashed border-gray-300 rounded-lg"></div>
+            `;
+                return;
+            }
+
+            // Sort students alphabetically by name
+            students.sort((a, b) => a.name.localeCompare(b.name));
+
+            students.forEach(student => {
+                const studentDiv = document.createElement('div');
+                // Tailwind class conversion for list item and grid layout
+                studentDiv.className = 'grid grid-cols-[80px_2fr_1fr_120px] items-center p-3 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 transition duration-150 shadow-sm';
+
+                studentDiv.innerHTML = `
+                <div class="text-xs font-mono text-gray-500 min-w-[50px]">${student.studentId}</div>
+                <div class="font-medium text-gray-800 truncate">${student.name}</div>
+                <div class="text-sm font-semibold text-primary-blue-dark">${student.classId}</div>
+                <div class="flex justify-end">
+                    <!-- DELETE BUTTON: Now calls deleteStudent directly -->
+                    <button onclick="deleteStudent('${student.id}')" 
+                            class="action-btn py-2 px-3 bg-danger-red text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition duration-150">
+                        <i class="ti ti-trash inline-block align-middle"></i>
+                    </button>
+                </div>
+            `;
+                STUDENT_LIST_ELEMENT.appendChild(studentDiv);
+            });
+        }
+
+        // Initialize on load
+        window.onload = function () {
+            // Render the full list initially
+            handleSearch(); // Uses search function to render all students and apply initial sorting.
+        };
+    </script>
+
+</body>
+
+</html>
+
+
+{% endblock %}

@@ -1997,7 +1997,8 @@ def roles_delete(role_id):
 def teacher_dashboard():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/teacher_dashboard.html")
+    # Use the existing teacher dashboard template
+    return render_template("teacher/dashboard.html")
 
 
 @app.route("/teacher/students")
@@ -2025,7 +2026,8 @@ def teacher_test_creation():
 def teacher_grade():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/grade.html")
+    # Render the available grades page (template is named grades.html)
+    return render_template("teacher/grades.html")
 
 
 @app.route("/student")
