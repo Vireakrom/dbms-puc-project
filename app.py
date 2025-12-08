@@ -3,7 +3,7 @@ import re
 import os
 import io
 import csv
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import init_app as init_models, db, User, Role, Student, Teacher, Class, Subject
 from sqlalchemy import func
@@ -11,6 +11,7 @@ from sqlalchemy import func
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
+app.permanent_session_lifetime = timedelta(days=30)
 
 # Initialize SQLAlchemy models and ensure required schema bits exist
 init_models(app)
@@ -85,6 +86,7 @@ def login():
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
+        remember = request.form.get("remember") == "on"
 
         errors["username"] = validate_username(username)
         errors["password"] = validate_password(password)
@@ -97,6 +99,7 @@ def login():
                     if user.is_active == 0:
                         errors["password"] = "Account is inactive."
                     else:
+                        session.permanent = remember
                         session["user"] = user.username
                         session["role_id"] = user.role_id
                         session["user_id"] = user.user_id
