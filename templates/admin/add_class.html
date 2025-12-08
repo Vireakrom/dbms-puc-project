@@ -104,6 +104,17 @@
   .flash-message {
     font-weight: 500;
   }
+  .small-edit-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+  }
+
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -213,10 +224,12 @@
                 {% endif %}
               </td>
               <td class="text-end">
-                <a href="{{ url_for('admin_add_class', edit_id=c.class_id, page=classes_pagination.page, per_page=request.args.get('per_page', 10)) }}" class="btn btn-primary btn-sm">
-                  <i class="bi bi-pencil"></i>
+                <a href="{{ url_for('admin_add_class', edit_id=c.class_id, page=classes_pagination.page, per_page=request.args.get('per_page', 10)) }}"
+                  class="btn btn-primary small-edit-btn">
+                    <i class="bi bi-pencil"></i>
                 </a>
-                <button class="btn btn-sm btn-{% if c.is_active %}danger{% else %}success{% endif %} toggle-class-status-btn"
+
+                <button class="btn btn-{% if c.is_active %}danger{% else %}success{% endif %} small-edit-btn toggle-class-status-btn"
                   title="{% if c.is_active %}Deactivate{% else %}Activate{% endif %}"
                   data-bs-toggle="modal" data-bs-target="#toggleClassStatusModal"
                   data-current-status="{% if c.is_active %}1{% else %}0{% endif %}"

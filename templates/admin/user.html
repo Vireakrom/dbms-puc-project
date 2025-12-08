@@ -146,6 +146,17 @@
     border-color: #146c43;
     color: white;
   }
+  .small-edit-btn {
+    width: 30px !important;
+    height: 30px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+  }
+
 </style>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
@@ -257,7 +268,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-primary edit-user" title="Edit" data-bs-toggle="modal"
+                  <button class="btn btn-primary small-edit-btn edit-user" title="Edit" data-bs-toggle="modal"
                     data-bs-target="#editUserModal" data-role="student" data-id="{{ row[1]}}"
                     data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
                     data-phone="{{ row[7] }}" data-class="{{ row[2] }}" data-class-id="{{ row[9] }}"
@@ -392,7 +403,7 @@
                   {% endif %}
                 </td>
                 <td class="text-end">
-                  <button class="btn btn-sm btn-primary edit-user" title="Edit" data-bs-toggle="modal"
+                  <button class="btn btn-primary small-edit-btn edit-user" title="Edit"  data-bs-toggle="modal"
                     data-bs-target="#editUserModal" data-role="teacher" data-id="{{ row[1]}}"
                     data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
                     data-phone="{{ row[7] }}" data-department="{{ row[2] }}" data-subject-id="{{ row[9] }}"

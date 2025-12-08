@@ -67,9 +67,9 @@ class Subject(db.Model):
 def init_app(app):
     # Build DB URI from env, fallback to mysql settings in db.py
     db_user = os.environ.get('DB_USER', 'root')
-    db_pass = os.environ.get('DB_PASSWORD', 'qebfix-fiqgy4-kabGim')
+    db_pass = os.environ.get('DB_PASSWORD', 'MySQL123')
     db_host = os.environ.get('DB_HOST', 'localhost')
-    db_name = os.environ.get('DB_NAME', 'final_testing_lms_db1')
+    db_name = os.environ.get('DB_NAME', 'final_testing_lms_db')
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
         'DATABASE_URL', f'mysql+mysqlconnector://{db_user}:{db_pass}@{db_host}/{db_name}'
     )

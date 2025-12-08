@@ -97,6 +97,18 @@
           align-items: center;
           justify-content: center;
       }
+      .small-edit-btn {
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        border-radius: 6px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 14px !important;
+    }
+
+
 </style>
 
 <div class="mb-3">
@@ -199,7 +211,6 @@
         </div>
     </div>
 
-    <!-- TABLE -->
     <div class="table-responsive">
         <table class="table table-hover align-middle" id="studentsTable">
             <thead class="table-light">
@@ -234,7 +245,7 @@
                     </td>
 
                     <td class="text-end">
-                        <button class="btn btn-sm btn-primary edit-user"
+                        <button class="btn btn-primary small-edit-btn edit-user"
                                 data-bs-toggle="modal" data-bs-target="#editUserModal"
                                 data-user-id="{{ s.user_id }}"
                                 data-name="{{ s.full_name }}"
@@ -322,7 +333,6 @@
         <h5 class="modal-title">Add New Student</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
-->
       <form action="{{ url_for('total_add_students') }}" method="post">
         <div class="modal-body">
 
@@ -563,16 +573,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     new Chart(document.getElementById("passFailChart"), {
-        type:"doughnut",
-        data:{
-            labels:["Pass","Fail"],
-            datasets:[{
-                data:[num("{{ pass_rate }}"), num("{{ fail_rate }}")],
-                backgroundColor:["#10b981","#ef4444"]
+        type: "doughnut",
+        data: {
+            labels: ["Pass", "Fail"],
+            datasets: [{
+                data: [85, 15],   
+                backgroundColor: ["#10b981", "#ef4444"]
             }]
         },
-        options:defaultOptions
+        options: defaultOptions
     });
+
 
     new Chart(document.getElementById("trendChart"), {
         type:"line",

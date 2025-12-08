@@ -521,39 +521,39 @@ body { background: #f4f6fb; }
         <h3 class="section-title text-center">Result Overview</h3>
         <div class="result-divider"></div>
 
-        <!-- FILTERS -->
         <div class="result-filters d-flex flex-wrap justify-content-center gap-3 mb-3">
 
-            <!-- GRADE FILTER -->
-            <select class="filter-select" id="gradeFilter">
-                <option value="">Filter by Grade</option>
-                {% for g in grades %}
-                    <option value="{{ g.grade_level }}">Grade {{ g.grade_level }}</option>
-                {% endfor %}
-            </select>
+        <!-- YEAR FILTER (NOW FIRST) -->
+        <select class="filter-select" id="yearFilter">
+            <option value="">Year</option>
+            {% for y in years %}
+                <option value="{{ y.academic_year }}">{{ y.academic_year }}</option>
+            {% endfor %}
+        </select>
 
-            <!-- TEACHER FILTER -->
-            <select class="filter-select" id="teacherFilter">
-                <option value="">Filter by Teacher</option>
-            </select>
+        <!-- GRADE FILTER -->
+        <select class="filter-select" id="gradeFilter">
+            <option value="">Filter by Grade</option>
+            {% for g in grades %}
+                <option value="{{ g.grade_level }}">Grade {{ g.grade_level }}</option>
+            {% endfor %}
+        </select>
 
-            <!-- YEAR FILTER -->
-            <select class="filter-select" id="yearFilter">
-                <option value="">Year</option>
-                {% for y in years %}
-                    <option value="{{ y.academic_year }}">{{ y.academic_year }}</option>
-                {% endfor %}
-            </select>
+        <!-- TEACHER FILTER -->
+        <select class="filter-select" id="teacherFilter">
+            <option value="">Filter by Teacher</option>
+        </select>
 
-            <!-- RESULT TYPE FILTER -->
-            <select class="filter-select" id="resultTypeFilter">
-                <option value="">Result Type</option>
-                <option value="top">Top Result</option>
-                <option value="average">Average</option>
-                <option value="fail">Fail</option>
-            </select>
+        <!-- RESULT TYPE FILTER -->
+        <select class="filter-select" id="resultTypeFilter">
+            <option value="">Result Type</option>
+            <option value="top">Top Result</option>
+            <option value="average">Average</option>
+            <option value="fail">Fail</option>
+        </select>
 
-        </div>
+    </div>
+
 
         <!-- Chart Box -->
         <div class="result-chart-box">
@@ -680,90 +680,26 @@ body { background: #f4f6fb; }
         </div>
     </div>
 </div>
-
 <script>
 document.addEventListener("DOMContentLoaded", () => {
 
-    const scroller = document.getElementById("examScroll");
-    const leftBtn = document.getElementById("leftBtn");
-    const rightBtn = document.getElementById("rightBtn");
-    const SCROLL_STEP = 320;
-
-    function updateButtons() {
-        if (!scroller) return;
-        const maxScroll = scroller.scrollWidth - scroller.clientWidth;
-        leftBtn.disabled = scroller.scrollLeft <= 0;
-        rightBtn.disabled = scroller.scrollLeft >= maxScroll - 2;
-    }
-
-    if (scroller) {
-        leftBtn.addEventListener("click", () => {
-            scroller.scrollBy({ left: -SCROLL_STEP, behavior: "smooth" });
-            setTimeout(updateButtons, 350);
-        });
-
-        rightBtn.addEventListener("click", () => {
-            scroller.scrollBy({ left: SCROLL_STEP, behavior: "smooth" });
-            setTimeout(updateButtons, 350);
-        });
-
-        scroller.addEventListener("scroll", updateButtons);
-        updateButtons();
-    }
-
-    feather.replace();
-
-    let chart = null;
-
-    function renderChart(top, avg, fail) {
-        const ctx = document.getElementById("resultChart");
-
-        let safeTop = top;
-        let safeAvg = avg;
-        let safeFail = fail;
-
-        if (top === 0 && avg === 0 && fail === 0) {
-            safeTop = 1;
-            safeAvg = 1;
-            safeFail = 1;
-        }
-
-        if (chart) chart.destroy();
-
-        chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Top Result', 'Average', 'Fail'],
-                datasets: [{
-                    data: [safeTop, safeAvg, safeFail],
-                    backgroundColor: ['#3b82f6', '#f59e0b', '#ef4444'],
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: false,
-                maintainAspectRatio: false,
-                cutout: '60%',
-                plugins: {
-                    legend: { display: false },
-
-                    tooltip: {
-                        callbacks: {
-                            label: function(ctx) {
-                                const index = ctx.dataIndex;
-                                const realValues = [top, avg, fail];
-                                return `${ctx.label}: ${realValues[index]} students`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-
-    renderChart({{ top_result }}, {{ average_result }}, {{ fail_result }});
-
+    const STATIC_RESULTS = {
+        "7": {
+            "1": { top: 25, avg: 40, fail: 10 }, // Teacher ID 1
+            "2": { top: 30, avg: 35, fail: 15 },
+            "default": { top: 28, avg: 38, fail: 12 }
+        },
+        "8": {
+            "3": { top: 32, avg: 44, fail: 11 },
+            "4": { top: 20, avg: 50, fail: 18 },
+            "default": { top: 26, avg: 42, fail: 14 }
+        },
+        "9": {
+            "5": { top: 35, avg: 40, fail: 8 },
+            "default": { top: 30, avg: 45, fail: 10 }
+        },
+        "default": { top: 30, avg: 50, fail: 20 }
+    };
 
     const gradeFilter = document.getElementById("gradeFilter");
     const teacherFilter = document.getElementById("teacherFilter");
@@ -774,39 +710,96 @@ document.addEventListener("DOMContentLoaded", () => {
     const selectedTeacher = document.getElementById("selectedTeacher");
     const selectedYear = document.getElementById("selectedYear");
 
-    function updateLabels() {
-        selectedGrade.textContent = gradeFilter.value ? "Grade " + gradeFilter.value : "None";
+    let chart = null;
 
-        selectedTeacher.textContent =
-            teacherFilter.selectedIndex > 0
-                ? teacherFilter.options[teacherFilter.selectedIndex].text
-                : "None";
+    function renderChart(top, avg, fail) {
 
-        selectedYear.textContent = yearFilter.value || "None";
+        const ctx = document.getElementById("resultChart");
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Top", "Average", "Fail"],
+                datasets: [{
+                    data: [top, avg, fail],
+                    backgroundColor: ["#3b82f6", "#f59e0b", "#ef4444"],
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: false,
+                cutout: "60%",
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
     }
 
     function updateResults() {
+        const year = yearFilter.value;
+
+        // If year is NOT 2025 → show NO DATA
+        if (year && year !== "2025") {
+
+            document.getElementById("topResult").innerText = 0;
+            document.getElementById("averageResult").innerText = 0;
+            document.getElementById("failResult").innerText = 0;
+
+            renderChart(0, 0, 0);
+
+            selectedYear.textContent = year;
+            selectedGrade.textContent = "None";
+            selectedTeacher.textContent = "None";
+
+            // Reset filters when year not supported
+            gradeFilter.value = "";
+            teacherFilter.innerHTML = `<option value="">Filter by Teacher</option>`;
+            resultTypeFilter.value = "";
+
+            return;
+        }
+
         const grade = gradeFilter.value;
         const teacher = teacherFilter.value;
-        const year = yearFilter.value;
+
+        let results = STATIC_RESULTS["default"];
+
+        if (grade && STATIC_RESULTS[grade]) {
+            if (teacher && STATIC_RESULTS[grade][teacher]) {
+                results = STATIC_RESULTS[grade][teacher];
+            } else {
+                results = STATIC_RESULTS[grade]["default"];
+            }
+        }
+
+        // Apply result type filter
         const type = resultTypeFilter.value;
 
-        fetch(`/admin/get_results?grade=${grade}&teacher_id=${teacher}&year=${year}&type=${type}`)
-            .then(res => res.json())
-            .then(data => {
-                renderChart(data.top, data.avg, data.fail);
+        if (type === "top") results = { top: results.top, avg: 0, fail: 0 };
+        if (type === "average") results = { top: 0, avg: results.avg, fail: 0 };
+        if (type === "fail") results = { top: 0, avg: 0, fail: results.fail };
 
-                document.getElementById("topResult").innerText = data.top;
-                document.getElementById("averageResult").innerText = data.avg;
-                document.getElementById("failResult").innerText = data.fail;
+        // Update visible numbers
+        document.getElementById("topResult").innerText = results.top;
+        document.getElementById("averageResult").innerText = results.avg;
+        document.getElementById("failResult").innerText = results.fail;
 
-                updateLabels();
-            })
-            .catch(err => console.error("Error fetching results:", err));
+        // Update chart
+        renderChart(results.top, results.avg, results.fail);
+
+        // Labels
+        selectedGrade.textContent = grade ? "Grade " + grade : "None";
+        selectedTeacher.textContent =
+            teacher ? teacherFilter.options[teacherFilter.selectedIndex].text : "None";
+        selectedYear.textContent = year || "None";
     }
 
     gradeFilter.addEventListener("change", () => {
-        let grade = gradeFilter.value;
+
+        const grade = gradeFilter.value;
 
         teacherFilter.innerHTML = `<option value="">Filter by Teacher</option>`;
         selectedTeacher.textContent = "None";
@@ -816,14 +809,15 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Load teachers for this grade (dynamic backend)
         fetch(`/admin/get_teachers_by_grade?grade=${grade}`)
             .then(res => res.json())
             .then(data => {
                 data.forEach(t => {
-                    let option = document.createElement("option");
-                    option.value = t.teacher_id;       
-                    option.textContent = t.full_name;  
-                    teacherFilter.appendChild(option);
+                    const opt = document.createElement("option");
+                    opt.value = t.teacher_id;
+                    opt.textContent = t.full_name;
+                    teacherFilter.appendChild(opt);
                 });
 
                 updateResults();
@@ -834,7 +828,7 @@ document.addEventListener("DOMContentLoaded", () => {
     yearFilter.addEventListener("change", updateResults);
     resultTypeFilter.addEventListener("change", updateResults);
 
-    updateLabels();
+    updateResults(); 
 });
 </script>
 

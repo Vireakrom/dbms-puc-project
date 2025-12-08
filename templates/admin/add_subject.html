@@ -102,6 +102,17 @@
   .flash-message {
     font-weight: 500;
   }
+  .small-edit-btn {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+  }
+
 </style>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -186,9 +197,11 @@
                 {% endif %}
               </td>
               <td class="text-end">
-                <a href="{{ url_for('admin_add_subject', edit_id=s.subject_id, page=subjects_pagination.page, per_page=request.args.get('per_page', 10)) }}" class="btn btn-primary btn-sm">
-                  <i class="bi bi-pencil"></i>
+                <a href="{{ url_for('admin_add_subject', edit_id=s.subject_id, page=subjects_pagination.page, per_page=request.args.get('per_page', 10)) }}"
+                  class="btn btn-primary small-edit-btn">
+                    <i class="bi bi-pencil"></i>
                 </a>
+
                 <button class="btn btn-sm btn-{% if s.is_active %}danger{% else %}success{% endif %} toggle-subject-status-btn"
                   title="{% if s.is_active %}Deactivate{% else %}Activate{% endif %}"
                   data-bs-toggle="modal" data-bs-target="#toggleSubjectStatusModal"
