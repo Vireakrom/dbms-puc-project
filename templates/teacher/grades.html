@@ -196,64 +196,6 @@
 
     </div>
 
-    <!-- Floating Add Class Button -->
-    <button id="addClassButton" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addClassModal">
-        <i class="fa-solid fa-plus"></i>
-    </button>
-
-    <!-- ========================================================= -->
-    <!-- Modal 1: Add New Class -->
-    <!-- ========================================================= -->
-    <div class="modal fade" id="addClassModal" tabindex="-1" aria-labelledby="addClassModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="addClassModalLabel"><i class="fa-solid fa-plus-circle"></i> Add New
-                        Class Section</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addClassForm">
-                        <div class="mb-3">
-                            <label for="newClassGrade" class="form-label">Grade Level</label>
-                            <select class="form-select" id="newClassGrade" required>
-                                <option value="">Select Grade</option>
-                                <option value="7">Grade 7</option>
-                                <option value="8">Grade 8</option>
-                                <option value="9">Grade 9</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newClassSection" class="form-label">Section Letter (e.g., A, B, C)</label>
-                            <input type="text" class="form-control" id="newClassSection" placeholder="e.g., D"
-                                maxlength="1" required>
-                            <div class="form-text">Enter a single letter for the class section.</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newStudentCount" class="form-label">Total Students Enrolled</label>
-                            <input type="number" class="form-control" id="newStudentCount" value="30" min="10" max="50"
-                                required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="newPassRate" class="form-label">Initial Pass Rate (%)</label>
-                            <input type="range" class="form-range" id="newPassRate" value="80" min="50" max="100"
-                                oninput="document.getElementById('passRateValue').innerText = this.value + '%'">
-                            <p class="mt-2">Simulated Pass Rate: <strong id="passRateValue">80%</strong></p>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-success" onclick="addNewClass()">
-                        <i class="fa-solid fa-save"></i> Save Class
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
     <!-- ========================================================= -->
     <!-- Modal 2: Results Display Modal -->
     <!-- ========================================================= -->
