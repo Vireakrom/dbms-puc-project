@@ -188,15 +188,48 @@
 
     <script>
         // --- LOCAL DATA STORE ---
-        // Sample data removed. The report now starts empty.
+        // Populated from backend /teacher/report/data
         let gradesData = [];
 
 
         // --- Data Loading and Rendering ---
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadGrades();
+            fetchGrades();
         });
+
+        async function fetchGrades() {
+            const tableBody = document.getElementById("gradesTableBody");
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted p-5">Loading latest grades...</td></tr>`;
+
+            try {
+                const res = await fetch("/teacher/report/data", { credentials: "same-origin" });
+                const raw = await res.text();
+
+                let payload;
+                try {
+                    payload = JSON.parse(raw);
+                } catch (parseErr) {
+                    throw new Error("Unexpected response while loading grades.");
+                }
+
+                if (!res.ok || !payload.ok) {
+                    throw new Error(payload?.error || "Failed to load grades");
+                }
+
+                gradesData = (payload.results || []).map((r) => ({
+                    id: String(r.id ?? ""),
+                    name: r.name || "N/A",
+                    title: r.title || `${r.subject || "Test"}${r.class_name ? ` (${r.class_name})` : ""}`,
+                    grade: r.grade ?? "N/A",
+                }));
+
+                loadGrades();
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger p-5">${err.message}</td></tr>`;
+            }
+        }
 
         /**
          * Filters, sorts, and renders the grades from the local gradesData array.
@@ -252,20 +285,25 @@
             }
 
             grades.forEach((g) => {
-                const gradeValue = parseInt(g.grade);
+                const gradeValue = Number(g.grade);
                 let gradeClass = '';
-                if (gradeValue >= 90) {
-                    gradeClass = 'high-grade';
-                } else if (gradeValue < 60) {
-                    gradeClass = 'low-grade';
+                if (!Number.isNaN(gradeValue)) {
+                    if (gradeValue >= 90) {
+                        gradeClass = 'high-grade';
+                    } else if (gradeValue < 60) {
+                        gradeClass = 'low-grade';
+                    }
                 }
+
+                const idDisplay = g.id ? g.id : '—';
+                const gradeDisplay = g.grade ?? 'N/A';
 
                 const row = document.createElement("tr");
                 row.innerHTML = `
-            <td><code>${g.id.substring(0, 8)}...</code></td>
+            <td><code>${idDisplay}</code></td>
             <td><strong>${g.name || 'N/A'}</strong></td>
             <td>${g.title || 'N/A'}</td>
-            <td class="${gradeClass}">${g.grade}</td>
+            <td class="${gradeClass}">${gradeDisplay}</td>
         `;
                 tableBody.appendChild(row);
             });

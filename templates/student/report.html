@@ -9,226 +9,226 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body {
-    background: #f4f6fb;
-}
+    body {
+        background: #f4f6fb;
+    }
 
-/* ===========================
+    /* ===========================
    PAGE HEADER
 =========================== */
-.page-header {
-    margin-bottom: 30px;
-}
+    .page-header {
+        margin-bottom: 30px;
+    }
 
-.page-header h1 {
-    font-size: 32px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 8px;
-}
+    .page-header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 8px;
+    }
 
-.page-header p {
-    color: #7f8c8d;
-    font-size: 16px;
-}
+    .page-header p {
+        color: #7f8c8d;
+        font-size: 16px;
+    }
 
-/* ===========================
+    /* ===========================
    SUMMARY CARDS
 =========================== */
-.summary-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
 
-.summary-card {
-    background: white;
-    padding: 25px;
-    border-radius: 16px;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
-    text-align: center;
-    transition: 0.3s;
-}
+    .summary-card {
+        background: white;
+        padding: 25px;
+        border-radius: 16px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        text-align: center;
+        transition: 0.3s;
+    }
 
-.summary-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
+    .summary-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
 
-.summary-card i {
-    font-size: 40px;
-    margin-bottom: 15px;
-}
+    .summary-card i {
+        font-size: 40px;
+        margin-bottom: 15px;
+    }
 
-.summary-card.blue i {
-    color: #3b82f6;
-}
+    .summary-card.blue i {
+        color: #3b82f6;
+    }
 
-.summary-card.green i {
-    color: #10b981;
-}
+    .summary-card.green i {
+        color: #10b981;
+    }
 
-.summary-card.yellow i {
-    color: #f59e0b;
-}
+    .summary-card.yellow i {
+        color: #f59e0b;
+    }
 
-.summary-card.purple i {
-    color: #8b5cf6;
-}
+    .summary-card.purple i {
+        color: #8b5cf6;
+    }
 
-.summary-card h3 {
-    font-size: 32px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 5px;
-}
+    .summary-card h3 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
 
-.summary-card p {
-    color: #7f8c8d;
-    font-size: 14px;
-    margin: 0;
-}
+    .summary-card p {
+        color: #7f8c8d;
+        font-size: 14px;
+        margin: 0;
+    }
 
-/* ===========================
+    /* ===========================
    PERFORMANCE CHART
 =========================== */
-.chart-container {
-    background: white;
-    padding: 30px;
-    border-radius: 18px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-    margin-bottom: 30px;
-}
+    .chart-container {
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 30px;
+    }
 
-.chart-container h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 25px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    .chart-container h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-/* ===========================
+    /* ===========================
    GRADES TABLE
 =========================== */
-.grades-section {
-    background: white;
-    padding: 30px;
-    border-radius: 18px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
+    .grades-section {
+        background: white;
+        padding: 30px;
+        border-radius: 18px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
 
-.grades-section h2 {
-    font-size: 22px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
+    .grades-section h2 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
 
-.grades-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+    .grades-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-.grades-table thead {
-    background: #f8f9fa;
-}
+    .grades-table thead {
+        background: #f8f9fa;
+    }
 
-.grades-table th {
-    padding: 15px;
-    text-align: left;
-    font-weight: 700;
-    color: #2c3e50;
-    border-bottom: 2px solid #e5e7eb;
-}
+    .grades-table th {
+        padding: 15px;
+        text-align: left;
+        font-weight: 700;
+        color: #2c3e50;
+        border-bottom: 2px solid #e5e7eb;
+    }
 
-.grades-table td {
-    padding: 15px;
-    border-bottom: 1px solid #e5e7eb;
-    color: #555;
-}
+    .grades-table td {
+        padding: 15px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #555;
+    }
 
-.grades-table tr:hover {
-    background: #f9fafb;
-}
+    .grades-table tr:hover {
+        background: #f9fafb;
+    }
 
-.grade-badge {
-    display: inline-block;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-}
+    .grade-badge {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
 
-.grade-excellent {
-    background: #d1fae5;
-    color: #065f46;
-}
+    .grade-excellent {
+        background: #d1fae5;
+        color: #065f46;
+    }
 
-.grade-good {
-    background: #dbeafe;
-    color: #1e40af;
-}
+    .grade-good {
+        background: #dbeafe;
+        color: #1e40af;
+    }
 
-.grade-average {
-    background: #fef3c7;
-    color: #92400e;
-}
+    .grade-average {
+        background: #fef3c7;
+        color: #92400e;
+    }
 
-.grade-poor {
-    background: #fee2e2;
-    color: #991b1b;
-}
+    .grade-poor {
+        background: #fee2e2;
+        color: #991b1b;
+    }
 
-.status-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 11px;
-    font-weight: 600;
-}
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 11px;
+        font-weight: 600;
+    }
 
-.status-completed {
-    background: #d1f2eb;
-    color: #27ae60;
-}
+    .status-completed {
+        background: #d1f2eb;
+        color: #27ae60;
+    }
 
-.status-pending {
-    background: #fff3cd;
-    color: #f39c12;
-}
+    .status-pending {
+        background: #fff3cd;
+        color: #f39c12;
+    }
 
-/* ===========================
+    /* ===========================
    EMPTY STATE
 =========================== */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: #7f8c8d;
-}
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #7f8c8d;
+    }
 
-.empty-state i {
-    font-size: 80px;
-    color: #d1d5db;
-    margin-bottom: 20px;
-}
+    .empty-state i {
+        font-size: 80px;
+        color: #d1d5db;
+        margin-bottom: 20px;
+    }
 
-.empty-state h3 {
-    font-size: 24px;
-    color: #2c3e50;
-    margin-bottom: 10px;
-}
+    .empty-state h3 {
+        font-size: 24px;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
 
-.empty-state p {
-    font-size: 16px;
-}
+    .empty-state p {
+        font-size: 16px;
+    }
 </style>
 
 <div class="page-header">
@@ -237,160 +237,203 @@ body {
 </div>
 
 <!-- Summary Cards -->
-<div class="summary-cards">
+<div class="summary-cards" id="summary-cards">
     <div class="summary-card blue">
         <i class="bi bi-clipboard-check"></i>
-        <h3>12</h3>
+        <h3 id="summary-completed">-</h3>
         <p>Quizzes Completed</p>
     </div>
     <div class="summary-card green">
         <i class="bi bi-graph-up-arrow"></i>
-        <h3>85.5%</h3>
+        <h3 id="summary-average">-</h3>
         <p>Average Score</p>
     </div>
     <div class="summary-card yellow">
         <i class="bi bi-hourglass-split"></i>
-        <h3>3</h3>
+        <h3 id="summary-pending">0</h3>
         <p>Pending Quizzes</p>
     </div>
     <div class="summary-card purple">
         <i class="bi bi-trophy"></i>
-        <h3>8</h3>
-        <p>Top Scores</p>
+        <h3 id="summary-top">-</h3>
+        <p>Top Score</p>
     </div>
 </div>
 
 <!-- Performance Chart -->
-<div class="chart-container">
+<div class="chart-container" id="chart-block" style="display:none;">
     <h2><i class="bi bi-bar-chart-line"></i> Performance Trend</h2>
     <canvas id="performanceChart" style="max-height: 300px;"></canvas>
 </div>
 
 <!-- Grades Table -->
-<div class="grades-section">
+<div class="grades-section" id="grades-section" style="display:none;">
     <h2><i class="bi bi-table"></i> Quiz Results</h2>
 
     <table class="grades-table">
         <thead>
             <tr>
-                <th>Quiz Title</th>
-                <th>Subject</th>
+                <th>Quiz / Subject</th>
+                <th>Teacher</th>
                 <th>Date</th>
                 <th>Score</th>
                 <th>Grade</th>
                 <th>Status</th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Sample Data - Replace with dynamic data from backend -->
-            <tr>
-                <td>Midterm Exam</td>
-                <td>Mathematics</td>
-                <td>Nov 28, 2025</td>
-                <td>92/100</td>
-                <td><span class="grade-badge grade-excellent">A</span></td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-            </tr>
-            <tr>
-                <td>Chapter 5 Quiz</td>
-                <td>Physics</td>
-                <td>Nov 25, 2025</td>
-                <td>78/100</td>
-                <td><span class="grade-badge grade-good">B</span></td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-            </tr>
-            <tr>
-                <td>Grammar Test</td>
-                <td>English</td>
-                <td>Nov 22, 2025</td>
-                <td>88/100</td>
-                <td><span class="grade-badge grade-excellent">A-</span></td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-            </tr>
-            <tr>
-                <td>History Quiz</td>
-                <td>History</td>
-                <td>Nov 20, 2025</td>
-                <td>65/100</td>
-                <td><span class="grade-badge grade-average">C</span></td>
-                <td><span class="status-badge status-completed">Completed</span></td>
-            </tr>
-            <tr>
-                <td>Final Project</td>
-                <td>Computer Science</td>
-                <td>Dec 5, 2025</td>
-                <td>-</td>
-                <td><span class="grade-badge grade-poor">-</span></td>
-                <td><span class="status-badge status-pending">Pending</span></td>
-            </tr>
+        <tbody id="grades-body">
         </tbody>
     </table>
 
-    <!-- Uncomment if no data available -->
-    <!-- <div class="empty-state">
+    <div class="empty-state" id="grades-empty" style="display:none;">
         <i class="bi bi-inbox"></i>
         <h3>No Reports Available</h3>
         <p>You haven't completed any quizzes yet. Start taking quizzes to see your reports here.</p>
-    </div> -->
+    </div>
 </div>
 
 <script>
-// Performance Chart
-const ctx = document.getElementById('performanceChart').getContext('2d');
-const performanceChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-        labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
-        datasets: [{
-            label: 'Average Score (%)',
-            data: [75, 78, 82, 85, 88, 90],
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            borderWidth: 3,
-            tension: 0.4,
-            fill: true,
-            pointRadius: 5,
-            pointHoverRadius: 7,
-            pointBackgroundColor: '#3b82f6',
-            pointBorderColor: '#fff',
-            pointBorderWidth: 2
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: true,
-        plugins: {
-            legend: {
-                display: true,
-                position: 'top',
+    let chartInstance = null;
+
+    function formatDate(value) {
+        if (!value) return '-';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '-';
+        return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function gradeClass(grade) {
+        const g = (grade || '').toString().toUpperCase();
+        if (g === 'A') return 'grade-excellent';
+        if (g === 'B') return 'grade-good';
+        if (g === 'C') return 'grade-average';
+        if (g === 'D' || g === 'F') return 'grade-poor';
+        return 'grade-average';
+    }
+
+    function renderSummary(summary) {
+        document.getElementById('summary-completed').textContent = summary.completed ?? '-';
+        document.getElementById('summary-average').textContent = summary.avg_score != null ? `${summary.avg_score}%` : '-';
+        document.getElementById('summary-pending').textContent = summary.pending ?? 0;
+        document.getElementById('summary-top').textContent = summary.top != null ? `${summary.top}%` : '-';
+    }
+
+    function renderTable(rows) {
+        const tbody = document.getElementById('grades-body');
+        const empty = document.getElementById('grades-empty');
+        const section = document.getElementById('grades-section');
+        tbody.innerHTML = '';
+
+        if (!rows || !rows.length) {
+            empty.style.display = 'block';
+            section.style.display = 'block';
+            return;
+        }
+
+        empty.style.display = 'none';
+        section.style.display = 'block';
+
+        rows.forEach(r => {
+            const tr = document.createElement('tr');
+            const gradeCls = gradeClass(r.grade);
+            tr.innerHTML = `
+            <td>${r.title || r.subject || '—'}</td>
+            <td>${r.teacher || '—'}</td>
+            <td>${formatDate(r.date)}</td>
+            <td>${r.score != null ? `${r.score}%` : '—'}</td>
+            <td><span class="grade-badge ${gradeCls}">${r.grade ?? '—'}</span></td>
+            <td><span class="status-badge status-completed">${r.status || 'Completed'}</span></td>
+        `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderChart(labels, scores) {
+        const block = document.getElementById('chart-block');
+        if (!labels || !labels.length || !scores || !scores.length) {
+            block.style.display = 'none';
+            return;
+        }
+        block.style.display = 'block';
+
+        const ctx = document.getElementById('performanceChart').getContext('2d');
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Quiz Score (%)',
+                    data: scores,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
             },
-            tooltip: {
-                enabled: true,
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                padding: 12,
-                titleFont: {
-                    size: 14,
-                    weight: 'bold'
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => `${ctx.parsed.y}%`
+                        }
+                    }
                 },
-                bodyFont: {
-                    size: 13
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 100,
-                ticks: {
-                    callback: function(value) {
-                        return value + '%';
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        suggestedMax: 100,
+                        ticks: {
+                            callback: (value) => `${value}%`
+                        }
                     }
                 }
             }
-        }
+        });
     }
-});
+
+    function showError(message) {
+        const body = document.getElementById('grades-body');
+        const section = document.getElementById('grades-section');
+        const empty = document.getElementById('grades-empty');
+        section.style.display = 'block';
+        empty.style.display = 'block';
+        empty.querySelector('h3').textContent = 'Unable to load reports';
+        empty.querySelector('p').textContent = message || 'Please try again later.';
+        body.innerHTML = '';
+    }
+
+    function loadReport() {
+        fetch('/student/report/data', { credentials: 'same-origin' })
+            .then(res => res.json().then(data => ({ ok: res.ok, data })))
+            .then(result => {
+                if (!result.ok || !result.data.ok) {
+                    showError(result.data.error || 'Failed to load reports');
+                    return;
+                }
+                const { summary, labels, scores, results } = result.data;
+                renderSummary(summary || {});
+                renderTable(results || []);
+                renderChart(labels || [], scores || []);
+            })
+            .catch(() => {
+                showError('Failed to load reports');
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', loadReport);
 </script>
 
 {% endblock %}
-

@@ -193,6 +193,23 @@
                             placeholder="60" required>
                     </div>
 
+                    <div>
+                        <label class="muted" for="exam-type">Exam Type</label>
+                        <select id="exam-type" name="exam_type" required>
+                            <option value="Quiz" selected>Quiz</option>
+                            <option value="Midterm">Midterm</option>
+                            <option value="Final">Final</option>
+                            <option value="Assignment">Assignment</option>
+                            <option value="Practice">Practice</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="muted" for="percentage-weight">Weight (%)</label>
+                        <input type="number" class="form-control" id="percentage-weight" name="percentage_weight"
+                            min="0" max="100" step="1" placeholder="0">
+                    </div>
+
                     <div class="md:col-span-3 grid grid-cols-2 gap-4">
                         <div>
                             <label class="muted" for="test-date">Date</label>
@@ -215,14 +232,13 @@
                             <label class="muted text-base font-semibold text-indigo-700">Question 1</label>
                         </div>
 
-                        <textarea name="q_1" placeholder="Type your multiple-choice question here..."
-                            required></textarea>
+                        <textarea name="q_1" placeholder="Type your multiple-choice question here..."></textarea>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                            <input name="q1_a" placeholder="A: Option Text" type="text" required>
-                            <input name="q1_b" placeholder="B: Option Text" type="text" required>
-                            <input name="q1_c" placeholder="C: Option Text" type="text" required>
-                            <input name="q1_d" placeholder="D: Option Text" type="text" required>
+                            <input name="q1_a" placeholder="A: Option Text" type="text">
+                            <input name="q1_b" placeholder="B: Option Text" type="text">
+                            <input name="q1_c" placeholder="C: Option Text" type="text">
+                            <input name="q1_d" placeholder="D: Option Text" type="text">
                         </div>
 
                         <div class="mt-4 flex flex-wrap items-center gap-4">
@@ -261,6 +277,7 @@
                         </svg>
                         Add Question
                     </button>
+                    <button type="button" class="btn btn-soft hidden" id="cancel-edit-btn">Cancel Edit</button>
                     <button type="submit" class="btn btn-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -268,7 +285,7 @@
                             <path d="m22 2-7 20-4-9-9-4Z" />
                             <path d="M22 2 11 13" />
                         </svg>
-                        Save Test
+                        <span id="save-btn-text">Save Test</span>
                     </button>
                 </div>
             </form>
@@ -296,14 +313,39 @@
     </div>
 
     <script>
+        const classData = {{ classes| tojson | safe }};
+        const subjectData = {{ subject| tojson | safe }};
+
         let questionCount = 1;
         const questionsWrapper = document.getElementById('questions-wrapper');
         const form = document.getElementById('test-form');
         const statusMessage = document.getElementById('status-message');
         const savedTestsWrapper = document.getElementById('saved-tests-wrapper');
         const noTestsMessage = document.getElementById('no-tests-message');
+        const subjectSelect = document.getElementById('test-subject');
+        const classSelect = document.getElementById('test-class');
+        const durationInput = document.getElementById('test-duration');
+        const examTypeSelect = document.getElementById('exam-type');
+        const percentageWeightInput = document.getElementById('percentage-weight');
 
-        // Capture the HTML structure of the first question card as a template string
+        function populateSelects() {
+            subjectSelect.innerHTML = '<option value="" disabled selected>Choose subject</option>';
+            if (subjectData) {
+                const opt = document.createElement('option');
+                opt.value = subjectData.subject_id;
+                opt.textContent = subjectData.subject_name;
+                subjectSelect.appendChild(opt);
+            }
+
+            classSelect.innerHTML = '<option value="" disabled selected>Choose class</option>';
+            (classData || []).forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.class_id;
+                opt.textContent = `${c.grade_level} - ${c.class_name}`;
+                classSelect.appendChild(opt);
+            });
+        }
+
         function getQuestionTemplate(count) {
             return `
             <div class="question-card bg-gray-50 border border-gray-200 rounded-lg p-4 mb-3">
@@ -311,13 +353,13 @@
                     <label class="muted text-base font-semibold text-indigo-700">Question ${count}</label>
                 </div>
                 
-                <textarea name="q_${count}" placeholder="Type your multiple-choice question here..." required></textarea>
+                <textarea name="q_${count}" placeholder="Type your multiple-choice question here..."></textarea>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-                    <input name="q${count}_a" placeholder="A: Option Text" type="text" required>
-                    <input name="q${count}_b" placeholder="B: Option Text" type="text" required>
-                    <input name="q${count}_c" placeholder="C: Option Text" type="text" required>
-                    <input name="q${count}_d" placeholder="D: Option Text" type="text" required>
+                    <input name="q${count}_a" placeholder="A: Option Text" type="text">
+                    <input name="q${count}_b" placeholder="B: Option Text" type="text">
+                    <input name="q${count}_c" placeholder="C: Option Text" type="text">
+                    <input name="q${count}_d" placeholder="D: Option Text" type="text">
                 </div>
 
                 <div class="mt-4 flex flex-wrap items-center gap-4">
@@ -336,66 +378,44 @@
             </div>`;
         }
 
-
-        // Function to create a new question card
         function createNewQuestionCard() {
             questionCount++;
-            const newCardHtml = getQuestionTemplate(questionCount);
-            questionsWrapper.insertAdjacentHTML('beforeend', newCardHtml);
-
-            // Re-apply removal logic and icon creation
+            questionsWrapper.insertAdjacentHTML('beforeend', getQuestionTemplate(questionCount));
             const newCard = questionsWrapper.lastElementChild;
             newCard.querySelector('.remove-q-btn').addEventListener('click', function () {
                 this.closest('.question-card').remove();
                 renumberQuestions();
             });
-
-            // Re-create icons in the new card
             lucide.createIcons();
-
             newCard.scrollIntoView({ behavior: 'smooth' });
             renumberQuestions();
         }
 
-        /**
-         * Re-evaluates all question cards, renames them, and updates the global count.
-         * This ensures data integrity after a question is removed.
-         */
         function renumberQuestions() {
             const cards = questionsWrapper.querySelectorAll('.question-card');
             questionCount = cards.length;
 
             cards.forEach((card, index) => {
                 const newCount = index + 1;
-
-                // 1. Update the Card Title
                 card.querySelector('.muted').textContent = 'Question ' + newCount;
-
-                // 2. Update 'name' attributes for inputs and textarea
                 card.querySelector('textarea').name = 'q_' + newCount;
-
-                // Options and Correct Answer Selector
-                const options = ['a', 'b', 'c', 'd'];
-                options.forEach(option => {
-                    // Use a more robust selector that finds inputs specific to the card
-                    const input = card.querySelector(`input[name*="_${option}"]`);
-                    if (input) {
-                        input.name = `q${newCount}_${option}`;
-                    }
-                });
-
+                const inputs = card.querySelectorAll('input');
+                if (inputs.length === 4) {
+                    inputs[0].name = `q${newCount}_a`;
+                    inputs[1].name = `q${newCount}_b`;
+                    inputs[2].name = `q${newCount}_c`;
+                    inputs[3].name = `q${newCount}_d`;
+                }
                 const select = card.querySelector('select');
                 if (select) {
                     select.name = `q${newCount}_correct`;
                 }
             });
 
-            // If the last card was removed and no cards remain, re-initialize the template
             if (questionCount === 0) {
                 questionsWrapper.insertAdjacentHTML('beforeend', getQuestionTemplate(1));
                 questionCount = 1;
                 const initialCard = questionsWrapper.lastElementChild;
-                // Note: Must re-attach the listener to the newly created Question 1 remove button
                 initialCard.querySelector('.remove-q-btn').addEventListener('click', function () {
                     this.closest('.question-card').remove();
                     renumberQuestions();
@@ -404,18 +424,15 @@
             }
         }
 
-
-        /**
-         * Template function to generate HTML for a saved test item.
-         */
         function createSavedTestItem(data) {
-            // Count how many keys start with 'q_' (e.g., q_1, q_2) to get the number of questions
-            const numQuestions = Object.keys(data).filter(key => key.startsWith('q_')).length;
-
             const div = document.createElement('div');
             div.className = 'flex flex-col sm:flex-row items-start sm:items-center p-4 bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition duration-200';
 
-            const scheduledDate = data.testDate ? new Date(data.testDate + 'T00:00:00').toLocaleDateString() : 'N/A';
+            const start = data.start_time ? new Date(data.start_time) : null;
+            const dateStr = start ? start.toLocaleDateString() : 'N/A';
+            const timeStr = start ? start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const questionLabel = `${data.question_count || 0} Question${(data.question_count || 0) !== 1 ? 's' : ''}`;
+            const classLabel = data.grade_level ? `${data.grade_level} - ${data.class_name}` : data.class_name;
 
             div.innerHTML = `
                 <div class="flex-1 min-w-0 pr-4">
@@ -423,44 +440,38 @@
                     <div class="flex flex-wrap items-center gap-x-4 text-sm text-gray-500 mt-1">
                         <span class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-book-open-text mr-1"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/><path d="M6 8h2"/><path d="M6 12h2"/><path d="M16 8h2"/><path d="M16 12h2"/></svg>
-                            ${data.subject}
+                            ${data.subject_name || ''}
                         </span>
                         <span class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-users mr-1"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                            ${data.class}
+                            ${classLabel || ''}
                         </span>
-                           <span class="flex items-center">
+                        <span class="flex items-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-check mr-1"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/><path d="m9 16 2 2 4-4"/></svg>
-                            ${scheduledDate} @ ${data.testTime}
+                            ${dateStr} ${timeStr}
                         </span>
                         <span class="flex items-center text-indigo-500 font-medium">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-help-circle mr-1"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
-                            ${numQuestions} Question${numQuestions > 1 ? 's' : ''}
+                            ${questionLabel}
                         </span>
                     </div>
                 </div>
-                <button class="btn btn-ghost text-red-600 self-start sm:self-center mt-3 sm:mt-0" onclick="this.closest('div.flex').remove(); recheckEmptyList();">
-                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2 inline-block mr-1"><path d="M3 6h18"/><path d="M19 6v14c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2V6"/><path d="M8 6V4c0-1.1.9-2 2-2h4c1.1 0 2 .9 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                    Delete
-                </button>
+                <div class="flex gap-2 mt-3 sm:mt-0">
+                    <button data-quiz-id="${data.quiz_id}" class="edit-test btn btn-soft text-sm">Edit</button>
+                </div>
             `;
             return div;
         }
 
         function recheckEmptyList() {
-            // savedTestsWrapper.children[0] is always the noTestsMessage element
-            // We check if only the noTestsMessage remains
             if (savedTestsWrapper.children.length === 1 && savedTestsWrapper.firstElementChild.id === 'no-tests-message') {
                 noTestsMessage.classList.remove('hidden');
             }
         }
 
-        // Add Question button listener
         document.getElementById('add-q').addEventListener('click', createNewQuestionCard);
 
-        // Initial setup for the first question's remove button
         document.addEventListener('DOMContentLoaded', () => {
-            // Attach removal logic to the first card's button
             const initialRemoveBtn = questionsWrapper.querySelector('.remove-q-btn');
             if (initialRemoveBtn) {
                 initialRemoveBtn.addEventListener('click', function () {
@@ -468,72 +479,191 @@
                     renumberQuestions();
                 });
             }
+            populateSelects();
         });
 
+        async function loadSavedTests() {
+            const resp = await fetch('/teacher/tests');
+            if (!resp.ok) return;
+            const tests = await resp.json();
 
-        // Submit listener 
-        form.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            // Check if there are any questions left
-            if (questionsWrapper.querySelectorAll('.question-card').length === 0) {
-                statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800');
-                statusMessage.classList.add('bg-red-100', 'text-red-800');
-                statusMessage.textContent = `Error: Please add at least one question to the test.`;
-                setTimeout(() => { statusMessage.classList.add('hidden'); }, 5000);
+            if (tests.length === 0) {
+                noTestsMessage.classList.remove('hidden');
                 return;
             }
 
-            const formData = new FormData(form);
-            const data = {};
+            noTestsMessage.classList.add('hidden');
+            savedTestsWrapper.innerHTML = '';
+            tests.forEach(t => savedTestsWrapper.appendChild(createSavedTestItem(t)));
+        }
 
-            // Collect all form data into a structured object
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
+        let editingQuizId = null;
 
-            // 1. Display saving success status (Simulation)
-            statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-800');
-            statusMessage.classList.add('bg-green-100', 'text-green-800');
-            statusMessage.textContent = `Test "${data.title}" saved successfully (Simulation)!`;
+        async function loadQuizToForm(quizId) {
+            try {
+                const resp = await fetch(`/teacher/tests/${quizId}`);
+                const result = await resp.json();
+                if (!resp.ok || !result.ok) {
+                    alert(result.error || 'Unable to load quiz.');
+                    return;
+                }
 
-            // 2. Add the test to the saved list
-            const newTestItem = createSavedTestItem(data);
-            savedTestsWrapper.prepend(newTestItem); // Add to the top of the list
+                const q = result.quiz;
+                editingQuizId = q.quiz_id;
 
-            // Hide the 'No tests saved yet' message
-            if (noTestsMessage) {
-                noTestsMessage.classList.add('hidden');
+                form.title.value = q.title || '';
+                subjectSelect.value = q.subject_id;
+                classSelect.value = q.class_id;
+                durationInput.value = q.duration || '';
+                form.testDate.value = q.testDate || '';
+                form.testTime.value = q.testTime || '';
+                examTypeSelect.value = q.exam_type || 'Quiz';
+                percentageWeightInput.value = q.percentage_weight || '';
+
+                questionsWrapper.innerHTML = '';
+                questionCount = 0;
+                (q.questions || []).forEach((item, idx) => {
+                    questionCount += 1;
+                    questionsWrapper.insertAdjacentHTML('beforeend', getQuestionTemplate(questionCount));
+                    const card = questionsWrapper.lastElementChild;
+                    card.querySelector('textarea').value = item.question || '';
+                    const inputs = card.querySelectorAll('input');
+                    inputs[0].value = item.option_a || '';
+                    inputs[1].value = item.option_b || '';
+                    inputs[2].value = item.option_c || '';
+                    inputs[3].value = item.option_d || '';
+                    const sel = card.querySelector('select');
+                    sel.value = item.correct_option || 'A';
+                    card.querySelector('.remove-q-btn').addEventListener('click', function () {
+                        this.closest('.question-card').remove();
+                        renumberQuestions();
+                    });
+                });
+
+                if (!q.questions || q.questions.length === 0) {
+                    createNewQuestionCard();
+                }
+
+                document.getElementById('save-btn-text').textContent = 'Update Test';
+                document.getElementById('cancel-edit-btn').classList.remove('hidden');
+                statusMessage.classList.add('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                alert('Unexpected error loading quiz.');
             }
+        }
 
-            // 3. Reset the form for the next creation
+        document.body.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-test');
+            if (!editBtn) return;
+            const quizId = editBtn.dataset.quizId;
+            loadQuizToForm(quizId);
+        });
+
+        function resetEditState() {
+            editingQuizId = null;
+            document.getElementById('save-btn-text').textContent = 'Save Test';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
             form.reset();
-
-            // Remove all question cards and recreate the first one
             questionsWrapper.innerHTML = '';
             questionCount = 0;
-            createNewQuestionCard(); // Creates Question 1 card
-
-            // Re-apply initial listener after reset
+            createNewQuestionCard();
             const initialCard = questionsWrapper.lastElementChild;
             initialCard.querySelector('.remove-q-btn').addEventListener('click', function () {
                 this.closest('.question-card').remove();
                 renumberQuestions();
             });
+            populateSelects();
+        }
 
-            // Scroll to the new list item
-            savedTestsWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-            // Clear status after a few seconds
-            setTimeout(() => {
-                statusMessage.classList.add('hidden');
-            }, 5000);
+        document.getElementById('cancel-edit-btn').addEventListener('click', (e) => {
+            e.preventDefault();
+            resetEditState();
         });
 
-        // Initialize icons on load
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const cards = questionsWrapper.querySelectorAll('.question-card');
+            if (cards.length === 0) {
+                statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+                statusMessage.textContent = 'Error: Please add at least one question to the test.';
+                setTimeout(() => { statusMessage.classList.add('hidden'); }, 4000);
+                return;
+            }
+
+            const questions = Array.from(cards).map(card => {
+                const inputs = card.querySelectorAll('input');
+                return {
+                    question: card.querySelector('textarea').value.trim(),
+                    option_a: inputs[0]?.value.trim() || '',
+                    option_b: inputs[1]?.value.trim() || '',
+                    option_c: inputs[2]?.value.trim() || '',
+                    option_d: inputs[3]?.value.trim() || '',
+                    correct_option: card.querySelector('select')?.value || ''
+                };
+            });
+
+            const payload = {
+                title: form.title.value.trim(),
+                subject_id: subjectSelect.value,
+                class_id: classSelect.value,
+                duration: durationInput.value,
+                testDate: form.testDate.value,
+                testTime: form.testTime.value,
+                questions,
+                exam_type: examTypeSelect.value || 'Quiz',
+                percentage_weight: percentageWeightInput.value || 0
+            };
+
+            try {
+                const url = editingQuizId ? `/teacher/tests/${editingQuizId}` : '/teacher/test_creation';
+                const method = editingQuizId ? 'PUT' : 'POST';
+                const resp = await fetch(url, {
+                    method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await resp.json();
+
+                if (!resp.ok || !result.ok) {
+                    const msg = result.error || 'Failed to save test.';
+                    statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                    statusMessage.classList.add('bg-red-100', 'text-red-800');
+                    statusMessage.textContent = msg;
+                    setTimeout(() => statusMessage.classList.add('hidden'), 5000);
+                    return;
+                }
+
+                statusMessage.classList.remove('hidden', 'bg-red-100', 'text-red-800');
+                statusMessage.classList.add('bg-green-100', 'text-green-800');
+                const successMsg = editingQuizId ? 'Test updated successfully.' : `Test "${result.quiz ? result.quiz.title : payload.title}" saved successfully.`;
+                statusMessage.textContent = successMsg;
+
+                if (noTestsMessage) {
+                    noTestsMessage.classList.add('hidden');
+                }
+
+                await loadSavedTests();
+
+                resetEditState();
+
+                savedTestsWrapper.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                setTimeout(() => statusMessage.classList.add('hidden'), 5000);
+            } catch (err) {
+                statusMessage.classList.remove('hidden', 'bg-green-100', 'text-green-800');
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+                statusMessage.textContent = 'Unexpected error saving test.';
+                setTimeout(() => statusMessage.classList.add('hidden'), 5000);
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
             recheckEmptyList();
+            loadSavedTests();
         });
     </script>
 </body>

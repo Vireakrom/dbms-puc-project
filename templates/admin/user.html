@@ -148,6 +148,8 @@
   }
 </style>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css">
+
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h4 class="m-0">Users</h4>
   <div class="d-flex flex-wrap gap-2">
@@ -203,14 +205,27 @@
     <div class="tab-content" id="userTabsContent">
       <!-- Students TAB -->
       <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <h6 class="mb-0 fw-bold">Students List</h6>
-          <select class="form-select filter-select" id="perPageSelect" style="width:150px">
-            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10 / page</option>
-            <option value="25" {% if request.args.get('per_page', '10') == '25' %}selected{% endif %}>25 / page</option>
-            <option value="50" {% if request.args.get('per_page', '10') == '50' %}selected{% endif %}>50 / page</option>
-            <option value="100" {% if request.args.get('per_page', '10') == '100' %}selected{% endif %}>100 / page</option>
-          </select>
+          <div class="d-flex gap-2 flex-wrap">
+            <select class="form-select filter-select" id="studentClassFilter" style="width:200px">
+              <option value="" {% if not student_class_filter %}selected{% endif %}>All classes</option>
+              {% for c in classes %}
+              <option value="{{ c.class_id }}" {% if student_class_filter and student_class_filter==c.class_id
+                %}selected{% endif %}>{{ c.grade_level }} - {{ c.class_name }}</option>
+              {% endfor %}
+            </select>
+            <select class="form-select filter-select per-page-select" id="studentsPerPage" style="width:150px">
+              <option value="10" {% if request.args.get('per_page', '10' )=='10' %}selected{% endif %}>10 / page
+              </option>
+              <option value="25" {% if request.args.get('per_page', '10' )=='25' %}selected{% endif %}>25 / page
+              </option>
+              <option value="50" {% if request.args.get('per_page', '10' )=='50' %}selected{% endif %}>50 / page
+              </option>
+              <option value="100" {% if request.args.get('per_page', '10' )=='100' %}selected{% endif %}>100 / page
+              </option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle" id="studentsTable">
@@ -255,11 +270,10 @@
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <button class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
-                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
-                    data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
-                    data-user-id="{{ row[3] }}"
-                    data-name="{{ row[5] }}"
+                  <button
+                    class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}" data-bs-toggle="modal"
+                    data-bs-target="#toggleStatusModal" data-user-id="{{ row[3] }}" data-name="{{ row[5] }}"
                     data-current-status="{{ row[8] }}"
                     data-action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}">
                     <i class="bi bi-{% if row[8] == 1 %}x-circle{% else %}check-circle{% endif %}"></i>
@@ -288,30 +302,36 @@
             <ul class="pagination pagination-sm mb-0">
               <!-- Previous Button -->
               <li class="page-item {% if not students_pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin_users', students_page=students_pagination.prev_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_prev else '#' }}" tabindex="-1">
+                <a class="page-link"
+                  href="{{ url_for('admin_users', students_page=students_pagination.prev_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_prev else '#' }}"
+                  tabindex="-1">
                   <i class="bi bi-chevron-left"></i>
                 </a>
               </li>
 
               <!-- Page Numbers -->
               {% for page_num in range(1, students_pagination.pages + 1) %}
-                {% if page_num == 1 or page_num == students_pagination.pages or (page_num >= students_pagination.page - 2 and page_num <= students_pagination.page + 2) %}
-                  <li class="page-item {% if page_num == students_pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('admin_users', students_page=page_num, teachers_page=request.args.get('teachers_page', 1)) }}">{{ page_num }}</a>
-                  </li>
+              {% if page_num == 1 or page_num == students_pagination.pages or (page_num >= students_pagination.page - 2
+              and page_num <= students_pagination.page + 2) %} <li
+                class="page-item {% if page_num == students_pagination.page %}active{% endif %}">
+                <a class="page-link"
+                  href="{{ url_for('admin_users', students_page=page_num, teachers_page=request.args.get('teachers_page', 1)) }}">{{
+                  page_num }}</a>
+                </li>
                 {% elif page_num == students_pagination.page - 3 or page_num == students_pagination.page + 3 %}
-                  <li class="page-item disabled">
-                    <span class="page-link">...</span>
-                  </li>
+                <li class="page-item disabled">
+                  <span class="page-link">...</span>
+                </li>
                 {% endif %}
-              {% endfor %}
+                {% endfor %}
 
-              <!-- Next Button -->
-              <li class="page-item {% if not students_pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin_users', students_page=students_pagination.next_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_next else '#' }}">
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-              </li>
+                <!-- Next Button -->
+                <li class="page-item {% if not students_pagination.has_next %}disabled{% endif %}">
+                  <a class="page-link"
+                    href="{{ url_for('admin_users', students_page=students_pagination.next_num, teachers_page=request.args.get('teachers_page', 1)) if students_pagination.has_next else '#' }}">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
             </ul>
           </nav>
         </div>
@@ -320,14 +340,27 @@
 
       <!-- Teachers TAB -->
       <div class="tab-pane fade" id="teachers" role="tabpanel" aria-labelledby="teachers-tab">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
           <h6 class="mb-0 fw-bold">Teachers List</h6>
-          <select class="form-select filter-select" id="perPageSelect" style="width:150px">
-            <option value="10" {% if request.args.get('per_page', '10') == '10' %}selected{% endif %}>10 / page</option>
-            <option value="25" {% if request.args.get('per_page', '10') == '25' %}selected{% endif %}>25 / page</option>
-            <option value="50" {% if request.args.get('per_page', '10') == '50' %}selected{% endif %}>50 / page</option>
-            <option value="100" {% if request.args.get('per_page', '10') == '100' %}selected{% endif %}>100 / page</option>
-          </select>
+          <div class="d-flex gap-2 flex-wrap">
+            <select class="form-select filter-select" id="teacherClassFilter" style="width:200px">
+              <option value="" {% if not teacher_class_filter %}selected{% endif %}>All classes</option>
+              {% for c in classes %}
+              <option value="{{ c.class_id }}" {% if teacher_class_filter and teacher_class_filter==c.class_id
+                %}selected{% endif %}>{{ c.grade_level }} - {{ c.class_name }}</option>
+              {% endfor %}
+            </select>
+            <select class="form-select filter-select per-page-select" id="teachersPerPage" style="width:150px">
+              <option value="10" {% if request.args.get('per_page', '10' )=='10' %}selected{% endif %}>10 / page
+              </option>
+              <option value="25" {% if request.args.get('per_page', '10' )=='25' %}selected{% endif %}>25 / page
+              </option>
+              <option value="50" {% if request.args.get('per_page', '10' )=='50' %}selected{% endif %}>50 / page
+              </option>
+              <option value="100" {% if request.args.get('per_page', '10' )=='100' %}selected{% endif %}>100 / page
+              </option>
+            </select>
+          </div>
         </div>
         <div class="table-responsive">
           <table class="table table-hover align-middle" id="teachersTable">
@@ -363,7 +396,7 @@
                     data-bs-target="#editUserModal" data-role="teacher" data-id="{{ row[1]}}"
                     data-user-id="{{ row[3] }}" data-name="{{ row[5] }}" data-email="{{ row[6] }}"
                     data-phone="{{ row[7] }}" data-department="{{ row[2] }}" data-subject-id="{{ row[9] }}"
-                    data-status="{{ row[8] }}">
+                    data-class-ids="{{ teacher_class_map.get(row[1], '') }}" data-status="{{ row[8] }}">
                     <i class="bi bi-pencil"></i>
                   </button>
                   <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
@@ -372,11 +405,10 @@
                       <i class="bi bi-key"></i>
                     </button>
                   </form>
-                  <button class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
-                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}"
-                    data-bs-toggle="modal" data-bs-target="#toggleStatusModal"
-                    data-user-id="{{ row[3] }}"
-                    data-name="{{ row[5] }}"
+                  <button
+                    class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
+                    title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}" data-bs-toggle="modal"
+                    data-bs-target="#toggleStatusModal" data-user-id="{{ row[3] }}" data-name="{{ row[5] }}"
                     data-current-status="{{ row[8] }}"
                     data-action="{{ url_for('admin_toggle_user_status', user_id=row[3]) }}">
                     <i class="bi bi-{% if row[8] == 1 %}x-circle{% else %}check-circle{% endif %}"></i>
@@ -405,30 +437,36 @@
             <ul class="pagination pagination-sm mb-0">
               <!-- Previous Button -->
               <li class="page-item {% if not teachers_pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.prev_num) if teachers_pagination.has_prev else '#' }}" tabindex="-1">
+                <a class="page-link"
+                  href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.prev_num) if teachers_pagination.has_prev else '#' }}"
+                  tabindex="-1">
                   <i class="bi bi-chevron-left"></i>
                 </a>
               </li>
 
               <!-- Page Numbers -->
               {% for page_num in range(1, teachers_pagination.pages + 1) %}
-                {% if page_num == 1 or page_num == teachers_pagination.pages or (page_num >= teachers_pagination.page - 2 and page_num <= teachers_pagination.page + 2) %}
-                  <li class="page-item {% if page_num == teachers_pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=page_num) }}">{{ page_num }}</a>
-                  </li>
+              {% if page_num == 1 or page_num == teachers_pagination.pages or (page_num >= teachers_pagination.page - 2
+              and page_num <= teachers_pagination.page + 2) %} <li
+                class="page-item {% if page_num == teachers_pagination.page %}active{% endif %}">
+                <a class="page-link"
+                  href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=page_num) }}">{{
+                  page_num }}</a>
+                </li>
                 {% elif page_num == teachers_pagination.page - 3 or page_num == teachers_pagination.page + 3 %}
-                  <li class="page-item disabled">
-                    <span class="page-link">...</span>
-                  </li>
+                <li class="page-item disabled">
+                  <span class="page-link">...</span>
+                </li>
                 {% endif %}
-              {% endfor %}
+                {% endfor %}
 
-              <!-- Next Button -->
-              <li class="page-item {% if not teachers_pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.next_num) if teachers_pagination.has_next else '#' }}">
-                  <i class="bi bi-chevron-right"></i>
-                </a>
-              </li>
+                <!-- Next Button -->
+                <li class="page-item {% if not teachers_pagination.has_next %}disabled{% endif %}">
+                  <a class="page-link"
+                    href="{{ url_for('admin_users', students_page=request.args.get('students_page', 1), teachers_page=teachers_pagination.next_num) if teachers_pagination.has_next else '#' }}">
+                    <i class="bi bi-chevron-right"></i>
+                  </a>
+                </li>
             </ul>
           </nav>
         </div>
@@ -462,6 +500,15 @@
             </div>
 
             <div class="col-md-6">
+              <label class="form-label">Gender</label>
+              <select name="gender" class="form-select filter-select" required>
+                <option value="">-- Select Gender --</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+
+            <div class="col-md-6">
               <label class="form-label">Email</label>
               <input type="email" name="email" class="form-control">
             </div>
@@ -485,8 +532,8 @@
             </div>
             <div class="col-md-6 teacher-only d-none">
               <label class="form-label">Subject</label>
-              <select name="subject_id" class="form-select filter-select">
-                <option value="">-- Select subject (optional) --</option>
+              <select name="subject_id" id="addSubjectId" class="form-select filter-select">
+                <option value="">-- Select subject --</option>
                 {% if active_subjects and active_subjects|length > 0 %}
                 {% for s in active_subjects %}
                 <option value="{{ s.subject_id }}">{{ s.subject_name }}</option>
@@ -495,6 +542,20 @@
                 <option value="" disabled>No active subjects</option>
                 {% endif %}
               </select>
+            </div>
+
+            <div class="col-md-12 teacher-only d-none" id="teacherClassWrap">
+              <label class="form-label">Classes</label>
+              <select name="class_ids[]" id="addClassIds" class="form-select" multiple>
+                {% if classes and classes|length > 0 %}
+                {% for c in classes %}
+                <option value="{{ c.class_id }}">{{ c.grade_level }} - {{ c.class_name }}</option>
+                {% endfor %}
+                {% else %}
+                <option value="" disabled>No classes available</option>
+                {% endif %}
+              </select>
+              <small class="text-muted">Select one or more classes.</small>
             </div>
 
           </div>
@@ -562,6 +623,20 @@
                 {% endfor %}
                 {% endif %}
               </select>
+            </div>
+
+            <div class="col-md-12 teacher-only-edit d-none">
+              <label class="form-label">Classes</label>
+              <select id="editClassIds" name="class_ids[]" class="form-select" multiple>
+                {% if classes and classes|length > 0 %}
+                {% for c in classes %}
+                <option value="{{ c.class_id }}">{{ c.grade_level }} - {{ c.class_name }}</option>
+                {% endfor %}
+                {% else %}
+                <option value="" disabled>No classes available</option>
+                {% endif %}
+              </select>
+              <small class="text-muted">Select one or more classes.</small>
             </div>
           </div>
         </div>
@@ -636,16 +711,21 @@
 
 <!-- Bootstrap JS (for tabs and modals) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 <div class="d-flex align-items-center gap-3 mt-2">
-  <div class="text-muted small">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for teachers)</div>
+  <div class="text-muted small">CSV headers: full_name,email,phone,class_id (for students) or subject_id (for teachers)
+  </div>
 
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
   <div id="flashMessages" class="d-flex align-items-center gap-2">
     {% for category, msg in messages %}
-    <span class="text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} small flash-message" style="transition: opacity 0.5s ease-out;">
-      <i class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill me-1"></i>
+    <span
+      class="text-{{ 'warning' if category=='warning' else ('danger' if category=='danger' else ('success' if category=='success' else 'info')) }} small flash-message"
+      style="transition: opacity 0.5s ease-out;">
+      <i
+        class="bi bi-{{ 'exclamation-triangle' if category=='warning' else ('x-circle' if category=='danger' else ('check-circle' if category=='success' else 'info-circle')) }}-fill me-1"></i>
       {{ msg }}
     </span>
     {% endfor %}
@@ -657,10 +737,51 @@
 <script>
   // Switch fields in Add User modal based on role
   const addRole = document.getElementById('addRole');
+  const addClassSelect = document.getElementById('addClassIds');
+  const editClassSelect = document.getElementById('editClassIds');
+  let addClassChoices = null;
+  let editClassChoices = null;
+
+  if (addClassSelect) {
+    addClassChoices = new Choices(addClassSelect, {
+      removeItemButton: true,
+      shouldSort: false,
+      placeholderValue: 'Select classes',
+      searchPlaceholderValue: 'Search class...'
+    });
+  }
+
+  if (editClassSelect) {
+    editClassChoices = new Choices(editClassSelect, {
+      removeItemButton: true,
+      shouldSort: false,
+      placeholderValue: 'Select classes',
+      searchPlaceholderValue: 'Search class...'
+    });
+  }
+
   function toggleAddRoleFields() {
     const isTeacher = addRole.value === 'teacher';
     document.querySelector('.student-only')?.classList.toggle('d-none', isTeacher);
-    document.querySelector('.teacher-only')?.classList.toggle('d-none', !isTeacher);
+    document.querySelectorAll('.teacher-only').forEach(el => el.classList.toggle('d-none', !isTeacher));
+
+    const subjectSelect = document.getElementById('addSubjectId');
+    if (subjectSelect) {
+      subjectSelect.required = isTeacher;
+      if (!isTeacher) subjectSelect.value = '';
+    }
+
+    const classIdsSelect = document.getElementById('addClassIds');
+    if (classIdsSelect) {
+      classIdsSelect.required = false; // optional
+      if (!isTeacher) {
+        if (addClassChoices) {
+          addClassChoices.removeActiveItems();
+        } else {
+          classIdsSelect.selectedIndex = -1;
+        }
+      }
+    }
   }
   addRole.addEventListener('change', toggleAddRoleFields);
   toggleAddRoleFields();
@@ -695,6 +816,13 @@
       if (subjectId) {
         document.getElementById('editSubjectId').value = subjectId;
       }
+
+      // Preselect classes using Choices
+      if (editClassChoices) {
+        const values = (btn.dataset.classIds || '').split(',').filter(Boolean);
+        editClassChoices.removeActiveItems();
+        editClassChoices.setChoiceByValue(values);
+      }
     } else {
       // For students, set class if available
       const classId = btn.dataset.classId;
@@ -727,15 +855,46 @@
     }, 5000); // Show for 5 seconds
   }
 
-  // Handle per-page selector change
-  const perPageSelect = document.getElementById('perPageSelect');
-  perPageSelect.addEventListener('change', () => {
-    const url = new URL(window.location);
-    url.searchParams.set('per_page', perPageSelect.value);
-    url.searchParams.set('students_page', '1');
-    url.searchParams.set('teachers_page', '1');
-    window.location.href = url.toString();
+  // Handle per-page selectors (students + teachers)
+  document.querySelectorAll('.per-page-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const url = new URL(window.location);
+      url.searchParams.set('per_page', sel.value);
+      url.searchParams.set('students_page', '1');
+      url.searchParams.set('teachers_page', '1');
+      window.location.href = url.toString();
+    });
   });
+
+  // Filter students by class
+  const studentClassFilter = document.getElementById('studentClassFilter');
+  if (studentClassFilter) {
+    studentClassFilter.addEventListener('change', () => {
+      const url = new URL(window.location);
+      if (studentClassFilter.value) {
+        url.searchParams.set('student_class', studentClassFilter.value);
+      } else {
+        url.searchParams.delete('student_class');
+      }
+      url.searchParams.set('students_page', '1');
+      window.location.href = url.toString();
+    });
+  }
+
+  // Filter teachers by class
+  const teacherClassFilter = document.getElementById('teacherClassFilter');
+  if (teacherClassFilter) {
+    teacherClassFilter.addEventListener('change', () => {
+      const url = new URL(window.location);
+      if (teacherClassFilter.value) {
+        url.searchParams.set('teacher_class', teacherClassFilter.value);
+      } else {
+        url.searchParams.delete('teacher_class');
+      }
+      url.searchParams.set('teachers_page', '1');
+      window.location.href = url.toString();
+    });
+  }
 
   // Simple client-side search across visible tab table
   const search = document.getElementById('globalSearch');

@@ -8,7 +8,6 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import init_app as init_models, db, User, Role, Student, Teacher, Class, Subject
 from sqlalchemy import func
 
-
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "supersecretkey")
 app.permanent_session_lifetime = timedelta(days=30)
@@ -402,89 +401,198 @@ def get_classes_by_grade():
 def admin_report():
     if not is_logged_in() or session.get("role_id") != 1:
         return redirect(url_for("login"))
-    
-    # Fetch real data from database
-    with app.app_context():
-        # Get filter parameters
-        grade_filter = request.args.get('grade', '')
-        class_filter = request.args.get('class', '')
-        subject_filter = request.args.get('subject', '')
-        year_filter = request.args.get('year', '2024-2025')
-        term_filter = request.args.get('term', '')
-        
-        # Count totals
-        total_students = Student.query.count()
-        total_teachers = Teacher.query.count()
-        total_classes = Class.query.filter_by(is_active=1).count()
-        total_subjects = Subject.query.filter_by(is_active=1).count()
-        
-        # Get all classes for filters
-        classes = Class.query.filter_by(is_active=1).order_by(Class.grade_level, Class.class_name).all()
-        
-        # Get all subjects for filters
-        subjects = Subject.query.filter_by(is_active=1).order_by(Subject.subject_name).all()
-        
-        # Get students with their class information
-        students_query = (
-            db.session.query(Student, User, Class)
-            .join(User, Student.users_user_id == User.user_id)
-            .outerjoin(Class, Student.class_id == Class.class_id)
-            .filter(User.is_active == 1)
-        )
-        
-        # Apply filters if provided
-        if grade_filter:
-            students_query = students_query.filter(Class.grade_level == grade_filter)
-        if class_filter:
-            students_query = students_query.filter(Class.class_name == class_filter)
-        
-        students_data = students_query.all()
-        
-        # Calculate statistics (using sample data for now as we don't have test results table yet)
-        # These will be replaced when you add the test/exam results table
-        pass_rate = 92.3  # Placeholder
-        average_score = 78.5  # Placeholder
-        top_performers = int(total_students * 0.48) if total_students > 0 else 0  # ~48% placeholder
-        need_support = int(total_students * 0.09) if total_students > 0 else 0  # ~9% placeholder
-        
-        # Sample data for display (will be replaced with real test data)
-        sample_results = []
-        for idx, (student, user, class_obj) in enumerate(students_data[:12]):  # Show first 12
-            sample_results.append({
-                'student_id': f"#STU{student.student_id:03d}",
-                'name': user.full_name or user.username,
-                'class_name': class_obj.class_name if class_obj else 'N/A',
-                'subject': 'Mathematics',  # Placeholder
-                'test_date': '2025-11-10',  # Placeholder
-                'score': 75 + (idx * 3) % 25,  # Placeholder
-                'grade': 'B',  # Placeholder
-                'status': 'Good',  # Placeholder
-                'remarks': 'Consistent performance'  # Placeholder
-            })
-    
+
+    # Real data pipeline
+    grade_filter = (request.args.get("grade") or "").strip()
+    class_filter = (request.args.get("class") or "").strip()
+    subject_filter = (request.args.get("subject") or "").strip()
+    year_filter = (request.args.get("year") or "").strip()
+    term_filter = (request.args.get("term") or "").strip()
+
+    # Reference data for filters
+    classes = Class.query.filter_by(is_active=1).order_by(Class.grade_level, Class.class_name).all()
+    subjects = Subject.query.filter_by(is_active=1).order_by(Subject.subject_name).all()
+
+    # If class filter is provided but not valid, reset to "all"
+    if class_filter:
+        valid_class_names = {c.class_name for c in classes}
+        if class_filter not in valid_class_names:
+            class_filter = ""
+
+    academic_year_rows = db.session.execute(db.text("""
+        SELECT DISTINCT academic_year
+        FROM classes
+        WHERE academic_year IS NOT NULL AND academic_year <> ''
+        ORDER BY academic_year DESC
+    """)).fetchall()
+    academic_years = [r.academic_year for r in academic_year_rows]
+
+    # Build test result query with filters
+    query = db.text(
+        """
+        SELECT
+            tr.result_id,
+            tr.test_date,
+            tr.quiz_score,
+            tr.grade,
+            tr.student_id,
+            tr.class_id,
+            tr.subject_id,
+            st.student_id AS sid,
+            u.full_name,
+            u.username,
+            c.class_name,
+            c.grade_level,
+            c.academic_year,
+            sub.subject_name
+        FROM test_results tr
+        JOIN students st ON st.student_id = tr.student_id
+        JOIN users u ON u.user_id = st.users_user_id
+        LEFT JOIN classes c ON c.class_id = tr.class_id
+        LEFT JOIN subjects sub ON sub.subject_id = tr.subject_id
+        WHERE 1=1
+        """
+    )
+
+    params = {}
+    conditions = []
+    if grade_filter:
+        conditions.append("AND c.grade_level = :grade")
+        params["grade"] = grade_filter
+    if class_filter:
+        conditions.append("AND c.class_name = :class_name")
+        params["class_name"] = class_filter
+    if subject_filter:
+        conditions.append("AND sub.subject_name = :subject_name")
+        params["subject_name"] = subject_filter
+    if year_filter:
+        conditions.append("AND (c.academic_year = :year)")
+        params["year"] = year_filter
+    # term_filter is ignored because test_results is not linked to quiz_id in the schema
+
+    if conditions:
+        query = db.text(query.text + " " + " ".join(conditions))
+
+    query = db.text(query.text + " ORDER BY tr.test_date DESC, tr.result_id DESC")
+
+    rows = db.session.execute(query, params).fetchall()
+
+    # Summary metrics
+    scores = [float(r.quiz_score) for r in rows if r.quiz_score is not None]
+    total_results = len(scores)
+    total_students = len({r.student_id for r in rows})
+    average_score = round(sum(scores) / total_results, 1) if total_results else 0.0
+    pass_count = sum(1 for s in scores if s >= 60)
+    top_performers = sum(1 for s in scores if s >= 90)
+    need_support = sum(1 for s in scores if s < 60)
+    pass_rate = round((pass_count / total_results) * 100, 1) if total_results else 0.0
+
+    # Grade distribution buckets
+    dist_buckets = {
+        "A (90-100)": {"count": 0, "color": "#10b981", "min": 90},
+        "B (80-89)": {"count": 0, "color": "#3b82f6", "min": 80},
+        "C (70-79)": {"count": 0, "color": "#f59e0b", "min": 70},
+        "D (60-69)": {"count": 0, "color": "#f97316", "min": 60},
+        "F (<60)": {"count": 0, "color": "#ef4444", "min": 0},
+    }
+    for s in scores:
+        if s >= 90:
+            dist_buckets["A (90-100)"]["count"] += 1
+        elif s >= 80:
+            dist_buckets["B (80-89)"]["count"] += 1
+        elif s >= 70:
+            dist_buckets["C (70-79)"]["count"] += 1
+        elif s >= 60:
+            dist_buckets["D (60-69)"]["count"] += 1
+        else:
+            dist_buckets["F (<60)"]["count"] += 1
+
+    grade_distribution = []
+    for label, info in dist_buckets.items():
+        count = info["count"]
+        percent = round((count / total_results) * 100, 1) if total_results else 0
+        grade_distribution.append({
+            "label": label,
+            "percent": percent,
+            "count": count,
+            "color": info["color"],
+        })
+
+    # Subject-wise averages
+    subject_scores = {}
+    for r in rows:
+        if r.quiz_score is None:
+            continue
+        subject_scores.setdefault(r.subject_name or "Unknown", []).append(float(r.quiz_score))
+    subject_averages = {
+        k: round(sum(v) / len(v), 1)
+        for k, v in subject_scores.items()
+    }
+
+    # Performance trend by grade level
+    grade_scores = {}
+    for r in rows:
+        if r.quiz_score is None:
+            continue
+        key = f"Grade {r.grade_level}" if r.grade_level else "Ungraded"
+        grade_scores.setdefault(key, []).append(float(r.quiz_score))
+
+    performance_trend = {
+        "labels": list(grade_scores.keys()),
+        "values": [round(sum(vals) / len(vals), 1) for vals in grade_scores.values()],
+    }
+
+    # Sample results table data (latest 50)
+    sample_results = []
+    for r in rows[:50]:
+        score_val = float(r.quiz_score) if r.quiz_score is not None else None
+        grade_val = r.grade if r.grade is not None else score_val
+        remarks = "Excellent" if score_val is not None and score_val >= 90 else "Needs support" if score_val is not None and score_val < 60 else "Good"
+        sample_results.append({
+            "student_id": f"#STU{r.student_id:03d}",
+            "name": r.full_name or r.username,
+            "class_name": r.class_name or "N/A",
+            "subject": r.subject_name or "N/A",
+            "test_date": r.test_date.strftime("%Y-%m-%d") if r.test_date else "",
+            "score": score_val if score_val is not None else "--",
+            "grade": grade_val if grade_val is not None else "--",
+            "remarks": remarks,
+        })
+
+    # Regardless of results rows, compute student count scoped by filters so counts stay consistent
+    student_query = db.session.query(Student.student_id).join(User, Student.users_user_id == User.user_id).outerjoin(Class, Student.class_id == Class.class_id)
+    if grade_filter:
+        student_query = student_query.filter(Class.grade_level == grade_filter)
+    if class_filter:
+        student_query = student_query.filter(Class.class_name == class_filter)
+    if year_filter:
+        student_query = student_query.filter(Class.academic_year == year_filter)
+    total_students = student_query.filter(User.is_active == 1).distinct().count()
+
     from_dashboard = request.args.get("from_dashboard")
     active_page = "dashboard" if from_dashboard else "report"
     return render_template(
         "admin/report.html",
         total_students=total_students,
-        total_teachers=total_teachers,
-        total_classes=total_classes,
-        total_subjects=total_subjects,
         pass_rate=pass_rate,
         average_score=average_score,
         top_performers=top_performers,
         need_support=need_support,
         classes=classes,
         subjects=subjects,
+        academic_years=academic_years,
         sample_results=sample_results,
+        grade_distribution=grade_distribution,
+        performance_trend=performance_trend,
+        subject_averages=subject_averages,
         filters={
-            'grade': grade_filter,
-            'class': class_filter,
-            'subject': subject_filter,
-            'year': year_filter,
-            'term': term_filter
+            "grade": grade_filter,
+            "class": class_filter,
+            "subject": subject_filter,
+            "year": year_filter,
+            "term": term_filter,
         },
-        active_page=active_page
+        active_page=active_page,
     )
 
 @app.route("/admin/add_class", methods=["GET", "POST"])
@@ -793,25 +901,33 @@ def admin_users():
     students_page = request.args.get('students_page', 1, type=int)
     teachers_page = request.args.get('teachers_page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
+    student_class_filter = request.args.get('student_class', type=int)
+    teacher_class_filter = request.args.get('teacher_class', type=int)
 
     # Provide lists for template
     with app.app_context():
+        cht = db.Table('classes_has_teachers', db.metadata, autoload_with=db.engine)
+
         students_query = (
             Student.query
             .join(User, Student.users_user_id == User.user_id)
             .outerjoin(Class, Student.class_id == Class.class_id)
             .add_columns(
-                Student.student_id, 
+                Student.student_id,
                 Class.class_name,
-                User.user_id, 
-                User.username, 
-                User.full_name, 
-                User.email, 
-                User.phone, 
+                User.user_id,
+                User.username,
+                User.full_name,
+                User.email,
+                User.phone,
                 User.is_active,
                 Student.class_id
             )
         )
+
+        if student_class_filter:
+            students_query = students_query.filter(Student.class_id == student_class_filter)
+
         students_pagination = students_query.paginate(page=students_page, per_page=per_page, error_out=False)
         students = students_pagination.items
 
@@ -820,17 +936,25 @@ def admin_users():
             .join(User, Teacher.users_user_id == User.user_id)
             .outerjoin(Subject, Teacher.subject_id == Subject.subject_id)
             .add_columns(
-                Teacher.teacher_id, 
+                Teacher.teacher_id,
                 Subject.subject_name,
-                User.user_id, 
-                User.username, 
-                User.full_name, 
-                User.email, 
-                User.phone, 
+                User.user_id,
+                User.username,
+                User.full_name,
+                User.email,
+                User.phone,
                 User.is_active,
                 Teacher.subject_id
             )
         )
+
+        if teacher_class_filter:
+            teachers_query = (
+                teachers_query
+                .join(cht, cht.c.teachers_teacher_id == Teacher.teacher_id)
+                .filter(cht.c.classes_class_id == teacher_class_filter)
+            )
+
         teachers_pagination = teachers_query.paginate(page=teachers_page, per_page=per_page, error_out=False)
         teachers = teachers_pagination.items
     # Fetch available classes (active and not full) and active subjects for the Add User modal using ORM
@@ -854,6 +978,21 @@ def admin_users():
     )
 
     active_subjects = Subject.query.filter_by(is_active=1).order_by(Subject.subject_name).all()
+    classes_all = Class.query.order_by(Class.grade_level, Class.class_name).all()
+
+    # Map teacher_id -> comma-separated class_ids for edit modal multi-select
+    teacher_class_map = {}
+    for t in teachers:
+        tid = t[1] if len(t) > 1 else None
+        if not tid:
+            continue
+        class_rows = db.session.execute(db.text("""
+            SELECT classes_class_id
+            FROM classes_has_teachers
+            WHERE teachers_teacher_id = :tid
+        """), {"tid": tid}).fetchall()
+        teacher_class_map[tid] = ",".join(str(r.classes_class_id) for r in class_rows) if class_rows else ""
+
     creds_available = len(_get_cred_list()) > 0
     return render_template(
         "admin/user.html",
@@ -864,6 +1003,10 @@ def admin_users():
         creds_available=creds_available,
         available_classes=available_classes,
         active_subjects=active_subjects,
+        classes=classes_all,
+        teacher_class_map=teacher_class_map,
+        student_class_filter=student_class_filter,
+        teacher_class_filter=teacher_class_filter,
         active_page="users"
     )
 
@@ -872,29 +1015,72 @@ def admin_users():
 def admin_create_user_related():
     if not is_logged_in() or session.get("role_id") != 1:
         return redirect(url_for("login"))
-    entity = request.form.get("entity") 
+    entity = request.form.get("entity")
+    if entity not in ("student", "teacher"):
+        flash("Invalid role selected.", "danger")
+        return redirect(url_for("admin_users"))
+
     full_name = request.form.get("full_name", "").strip() or "New User"
+    gender = request.form.get("gender", "").strip()
     email = request.form.get("email", "").strip() or None
     phone = request.form.get("phone", "").strip() or None
     class_id = request.form.get("class_id")
     subject_id = request.form.get("subject_id")
-    role_id = 3 if entity == 'student' else 2
+    teacher_classes = request.form.getlist("class_ids[]") if entity == "teacher" else []
+
+    if not gender:
+        flash("Gender is required.", "warning")
+        return redirect(url_for("admin_users"))
+
+    if entity == "teacher" and not subject_id:
+        flash("Subject is required for teachers.", "warning")
+        return redirect(url_for("admin_users"))
+
+    role_id = 3 if entity == "student" else 2
     username = _generate_username(full_name.split()[0] if full_name else entity)
     temp_pw = _generate_password()
     hashed = generate_password_hash(temp_pw)
-    with app.app_context():
-        u = User(username=username, password=hashed, full_name=full_name, email=email, role_id=role_id, is_active=1, phone=phone, force_password_change=1)
-        db.session.add(u)
-        db.session.flush()
-        if entity == 'student':
-            s = Student(class_id=int(class_id) if class_id else None, users_user_id=u.user_id)
-            db.session.add(s)
-        else:
-            t = Teacher(subject_id=int(subject_id) if subject_id else None, users_user_id=u.user_id)
-            db.session.add(t)
-        db.session.commit()
-    _add_credential(username, temp_pw, full_name, email or "")
-    flash(f"{entity.title()} and user created. Credentials added to one-time list.", "success")
+
+    try:
+        with app.app_context():
+            u = User(
+                username=username,
+                password=hashed,
+                full_name=full_name,
+                email=email,
+                gender=gender,
+                role_id=role_id,
+                is_active=1,
+                phone=phone,
+                force_password_change=1
+            )
+            db.session.add(u)
+            db.session.flush()
+
+            if entity == "student":
+                s = Student(class_id=int(class_id) if class_id else None, users_user_id=u.user_id)
+                db.session.add(s)
+            else:
+                t = Teacher(subject_id=int(subject_id) if subject_id else None, users_user_id=u.user_id)
+                db.session.add(t)
+                db.session.flush()
+
+                for cid in teacher_classes:
+                    if not cid:
+                        continue
+                    db.session.execute(db.text("""
+                        INSERT INTO classes_has_teachers (classes_class_id, teachers_teacher_id)
+                        VALUES (:cid, :tid)
+                    """), {"cid": int(cid), "tid": t.teacher_id})
+
+            db.session.commit()
+        _add_credential(username, temp_pw, full_name, email or "")
+        flash(f"{entity.title()} and user created. Credentials added to one-time list.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash("Failed to create user.", "danger")
+        print("Create user error:", e)
+
     return redirect(url_for("admin_users"))
 
 
@@ -1978,11 +2164,237 @@ def teacher_dashboard():
     return render_template("teacher/dashboard.html", active_page="dashboard")
 
 
+@app.route("/teacher/dashboard/data")
+def teacher_dashboard_data():
+    """Provide dashboard stats for the logged-in teacher."""
+    if not is_logged_in() or session.get("role_id") != 2:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text(
+        """
+        SELECT teacher_id
+        FROM teachers
+        WHERE users_user_id = :uid
+        """
+    ), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        return jsonify({"ok": False, "error": "Teacher profile not found."}), 404
+
+    teacher_id = teacher_row.teacher_id
+
+    # Classes the teacher handles
+    class_rows = db.session.execute(db.text(
+        """
+        SELECT c.class_id, c.class_name, c.grade_level
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        ORDER BY c.grade_level, c.class_name
+        """
+    ), {"tid": teacher_id}).fetchall()
+
+    total_classes = len(class_rows)
+
+    # Summary counts
+    student_count_row = db.session.execute(db.text(
+        """
+        SELECT COUNT(DISTINCT s.student_id) AS total_students
+        FROM students s
+        JOIN classes_has_teachers cht ON cht.classes_class_id = s.class_id
+        WHERE cht.teachers_teacher_id = :tid
+        """
+    ), {"tid": teacher_id}).fetchone()
+    total_students = student_count_row.total_students if student_count_row else 0
+
+    totals_row = db.session.execute(db.text(
+        """
+        SELECT
+            (SELECT COUNT(*) FROM quizzes q WHERE q.teacher_id = :tid) AS total_tests,
+            (SELECT COUNT(*) FROM test_results tr WHERE tr.teacher_id = :tid) AS total_results
+        """
+    ), {"tid": teacher_id}).fetchone()
+
+    total_tests = totals_row.total_tests if totals_row else 0
+    total_results = totals_row.total_results if totals_row else 0
+
+    # Upcoming tests (future start times)
+    upcoming = db.session.execute(db.text(
+        """
+        SELECT
+            q.quiz_id,
+            q.title,
+            q.start_time,
+            q.end_time,
+            c.class_name,
+            s.subject_name
+        FROM quizzes q
+        JOIN classes c ON c.class_id = q.class_id
+        JOIN subjects s ON s.subject_id = q.subject_id
+        WHERE q.teacher_id = :tid
+          AND q.is_active = 1
+          AND q.start_time >= NOW()
+        ORDER BY q.start_time ASC
+        LIMIT 5
+        """
+    ), {"tid": teacher_id}).fetchall()
+
+    upcoming_tests = [
+        {
+            "quiz_id": r.quiz_id,
+            "title": r.title,
+            "class_name": r.class_name,
+            "subject_name": r.subject_name,
+            "start_time": r.start_time.isoformat() if r.start_time else None,
+            "end_time": r.end_time.isoformat() if r.end_time else None,
+        }
+        for r in upcoming
+    ]
+
+    # Recent test results (latest submissions)
+    recent_rows = db.session.execute(db.text(
+        """
+        SELECT
+            tr.result_id,
+            tr.test_date,
+            tr.quiz_score,
+            tr.grade,
+            u.full_name AS student_name,
+            c.class_name,
+            s.subject_name
+        FROM test_results tr
+        JOIN students st ON st.student_id = tr.student_id
+        JOIN users u ON u.user_id = st.users_user_id
+        JOIN classes c ON c.class_id = tr.class_id
+        JOIN subjects s ON s.subject_id = tr.subject_id
+        WHERE tr.teacher_id = :tid
+        ORDER BY tr.test_date DESC
+        LIMIT 5
+        """
+    ), {"tid": teacher_id}).fetchall()
+
+    recent_results = []
+    for r in recent_rows:
+        grade_val = r.grade if r.grade is not None else r.quiz_score
+        recent_results.append({
+            "result_id": r.result_id,
+            "student_name": r.student_name,
+            "class_name": r.class_name,
+            "subject_name": r.subject_name,
+            "score": float(r.quiz_score) if r.quiz_score is not None else None,
+            "grade": float(grade_val) if isinstance(grade_val, (int, float)) else grade_val,
+            "test_date": r.test_date.isoformat() if r.test_date else None,
+        })
+
+    # Pass / fail by class for chart
+    pass_fail_rows = db.session.execute(db.text(
+        """
+        SELECT
+            c.class_name,
+            SUM(CASE WHEN tr.quiz_score >= 60 THEN 1 ELSE 0 END) AS pass_count,
+            SUM(CASE WHEN tr.quiz_score < 60 THEN 1 ELSE 0 END) AS fail_count
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        LEFT JOIN test_results tr ON tr.class_id = c.class_id AND tr.teacher_id = :tid
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        GROUP BY c.class_id, c.class_name
+        ORDER BY c.grade_level, c.class_name
+        """
+    ), {"tid": teacher_id}).fetchall()
+
+    pass_fail = [
+        {
+            "class_name": r.class_name,
+            "pass_count": int(r.pass_count or 0),
+            "fail_count": int(r.fail_count or 0),
+        }
+        for r in pass_fail_rows
+    ]
+
+    # Tests distribution by grade level
+    tests_by_grade_rows = db.session.execute(db.text(
+        """
+        SELECT
+            c.grade_level,
+            COUNT(q.quiz_id) AS test_count
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        LEFT JOIN quizzes q ON q.class_id = c.class_id AND q.teacher_id = :tid
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        GROUP BY c.grade_level
+        ORDER BY c.grade_level
+        """
+    ), {"tid": teacher_id}).fetchall()
+
+    tests_by_grade = [
+        {
+            "grade_level": r.grade_level,
+            "test_count": int(r.test_count or 0),
+        }
+        for r in tests_by_grade_rows
+    ]
+
+    payload = {
+        "summary": {
+            "total_students": int(total_students or 0),
+            "total_classes": int(total_classes or 0),
+            "total_tests": int(total_tests or 0),
+            "total_results": int(total_results or 0),
+        },
+        "upcoming_tests": upcoming_tests,
+        "recent_results": recent_results,
+        "pass_fail": pass_fail,
+        "tests_by_grade": tests_by_grade,
+    }
+
+    return jsonify({"ok": True, "data": payload})
+
+
 @app.route("/teacher/students")
 def teacher_students():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/students.html", active_page="students")
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text("""
+        SELECT teacher_id
+        FROM teachers
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        flash("Teacher profile not found.", "danger")
+        return redirect(url_for("logout"))
+
+    classes = db.session.execute(db.text("""
+        SELECT c.class_id, c.class_name, c.grade_level
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        ORDER BY c.grade_level, c.class_name
+    """), {"tid": teacher_row.teacher_id}).fetchall()
+
+    class_list = [{"class_id": r.class_id, "class_name": r.class_name, "grade_level": r.grade_level} for r in classes]
+
+    selected_class_id = request.args.get("class_id", type=int) or (class_list[0]["class_id"] if class_list else None)
+
+    students = []
+    if selected_class_id:
+        students = db.session.execute(db.text("""
+            SELECT s.student_id, s.class_id, u.full_name, u.username, u.email
+            FROM students s
+            JOIN users u ON u.user_id = s.users_user_id
+            WHERE s.class_id = :cid
+            ORDER BY u.full_name
+        """), {"cid": selected_class_id}).fetchall()
+
+    return render_template(
+        "teacher/students.html",
+        active_page="students",
+        classes=class_list,
+        selected_class_id=selected_class_id,
+        students=students
+    )
 
 
 @app.route("/teacher/report")
@@ -1992,11 +2404,230 @@ def teacher_report():
     return render_template("teacher/report.html", active_page="report")
 
 
-@app.route("/teacher/test_creation")
+@app.route("/teacher/report/data")
+def teacher_report_data():
+    """Return grade/test results for the logged-in teacher."""
+    try:
+        if not is_logged_in() or session.get("role_id") != 2:
+            return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+        user_id = session.get("user_id")
+        teacher_row = db.session.execute(db.text(
+            """
+            SELECT teacher_id
+            FROM teachers
+            WHERE users_user_id = :uid
+            """
+        ), {"uid": user_id}).fetchone()
+
+        if not teacher_row:
+            return jsonify({"ok": False, "error": "Teacher profile not found."}), 404
+
+        search = (request.args.get("search") or "").strip().lower()
+
+        query = """
+            SELECT
+                tr.result_id,
+                tr.test_date,
+                tr.quiz_score,
+                tr.grade,
+                sub.subject_name,
+                c.class_name,
+                u.full_name AS student_name
+            FROM test_results tr
+            JOIN students s ON s.student_id = tr.student_id
+            JOIN users u ON u.user_id = s.users_user_id
+            JOIN subjects sub ON sub.subject_id = tr.subject_id
+            JOIN classes c ON c.class_id = tr.class_id
+            WHERE tr.teacher_id = :tid
+        """
+
+        params = {"tid": teacher_row.teacher_id}
+
+        if search:
+            query += " AND LOWER(u.full_name) LIKE :search"
+            params["search"] = f"%{search}%"
+
+        query += " ORDER BY tr.test_date DESC, u.full_name"
+
+        rows = db.session.execute(db.text(query), params).fetchall()
+
+        results = []
+        for r in rows:
+            # Grade may be a letter (generated column) or numeric; avoid forcing float on letters
+            grade_value = r.grade if r.grade is not None else r.quiz_score
+            test_label = r.subject_name
+            if r.class_name:
+                test_label = f"{test_label} ({r.class_name})"
+            if r.test_date:
+                test_label = f"{test_label} on {r.test_date.strftime('%Y-%m-%d')}"
+
+            results.append({
+                "id": r.result_id,
+                "name": r.student_name,
+                "title": test_label,
+                "grade": float(grade_value) if isinstance(grade_value, (int, float)) else grade_value,
+                "subject": r.subject_name,
+                "class_name": r.class_name,
+                "test_date": r.test_date.isoformat() if r.test_date else None,
+            })
+
+        return jsonify({"ok": True, "results": results})
+
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+@app.route("/teacher/test_creation", methods=["GET", "POST"])
 def teacher_test_creation():
     if not is_logged_in() or session.get("role_id") != 2:
         return redirect(url_for("login"))
-    return render_template("teacher/test_creation.html", active_page="tests")
+
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text("""
+        SELECT teacher_id, subject_id
+        FROM teachers
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        flash("Teacher profile not found.", "danger")
+        return redirect(url_for("logout"))
+
+    teacher_id = teacher_row.teacher_id
+
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+
+        required = {
+            "title": data.get("title", "").strip(),
+            "subject_id": data.get("subject_id"),
+            "class_id": data.get("class_id"),
+            "duration": data.get("duration"),
+            "testDate": data.get("testDate"),
+            "testTime": data.get("testTime"),
+        }
+
+        missing = [k for k, v in required.items() if not v and v != 0]
+        if missing:
+            return jsonify({"ok": False, "error": f"Missing fields: {', '.join(missing)}"}), 400
+
+        try:
+            title = required["title"]
+            subject_id = int(required["subject_id"])
+            class_id = int(required["class_id"])
+            duration = int(required["duration"])
+            test_date = required["testDate"]
+            test_time = required["testTime"]
+            start_dt = datetime.strptime(f"{test_date} {test_time}", "%Y-%m-%d %H:%M")
+            end_dt = start_dt + timedelta(minutes=duration)
+        except Exception:
+            return jsonify({"ok": False, "error": "Invalid field types."}), 400
+
+        questions = data.get("questions") or []
+        if not questions:
+            return jsonify({"ok": False, "error": "At least one question is required."}), 400
+
+        exam_type = data.get("exam_type") or "Quiz"
+        percentage_weight = data.get("percentage_weight") or 0
+
+        try:
+            result = db.session.execute(db.text("""
+                INSERT INTO quizzes 
+                    (title, class_id, subject_id, teacher_id,
+                     exam_type, percentage_weight,
+                     start_time, end_time, is_active, created_by)
+                VALUES 
+                    (:title, :class_id, :subject_id, :teacher_id,
+                     :exam_type, :percentage_weight,
+                     :start_time, :end_time, 1, :created_by)
+            """), {
+                "title": title,
+                "class_id": class_id,
+                "subject_id": subject_id,
+                "teacher_id": teacher_id,
+                "exam_type": exam_type,
+                "percentage_weight": percentage_weight,
+                "start_time": start_dt,
+                "end_time": end_dt,
+                "created_by": user_id
+            })
+
+            quiz_id = result.lastrowid
+
+            for q in questions:
+                db.session.execute(db.text("""
+                    INSERT INTO quiz_questions 
+                        (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option)
+                    VALUES 
+                        (:quiz_id, :question_text, :option_a, :option_b, :option_c, :option_d, :correct_option)
+                """), {
+                    "quiz_id": quiz_id,
+                    "question_text": q.get("question", "").strip(),
+                    "option_a": q.get("option_a", ""),
+                    "option_b": q.get("option_b", ""),
+                    "option_c": q.get("option_c", ""),
+                    "option_d": q.get("option_d", ""),
+                    "correct_option": q.get("correct_option", "")
+                })
+
+            db.session.commit()
+            log_activity(user_id, f"Created quiz '{title}'")
+
+            meta = db.session.execute(db.text("""
+                SELECT c.class_name, c.grade_level, s.subject_name
+                FROM classes c
+                JOIN subjects s ON s.subject_id = :sid
+                WHERE c.class_id = :cid
+            """), {"cid": class_id, "sid": subject_id}).fetchone()
+
+            response_quiz = {
+                "quiz_id": quiz_id,
+                "title": title,
+                "class_id": class_id,
+                "subject_id": subject_id,
+                "class_name": meta.class_name if meta else str(class_id),
+                "grade_level": meta.grade_level if meta else "",
+                "subject_name": meta.subject_name if meta else "",
+                "start_time": start_dt.isoformat(),
+                "end_time": end_dt.isoformat(),
+                "question_count": len(questions)
+            }
+
+            return jsonify({"ok": True, "quiz": response_quiz})
+        except Exception as e:
+            db.session.rollback()
+            return jsonify({"ok": False, "error": str(e)}), 500
+
+    classes = db.session.execute(db.text("""
+        SELECT c.class_id, c.class_name, c.grade_level
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        ORDER BY c.grade_level, c.class_name
+    """), {"tid": teacher_id}).fetchall()
+
+    class_list = [
+        {"class_id": r.class_id, "class_name": r.class_name, "grade_level": r.grade_level}
+        for r in classes
+    ]
+
+    subject_row = db.session.execute(db.text("""
+        SELECT subject_id, subject_name
+        FROM subjects
+        WHERE subject_id = :sid
+    """), {"sid": teacher_row.subject_id}).fetchone()
+
+    subject_data = None
+    if subject_row:
+        subject_data = {"subject_id": subject_row.subject_id, "subject_name": subject_row.subject_name}
+
+    return render_template(
+        "teacher/test_creation.html",
+        active_page="tests",
+        classes=class_list,
+        subject=subject_data
+    )
 
 
 @app.route("/teacher/grade")
@@ -2007,18 +2638,550 @@ def teacher_grade():
     return render_template("teacher/grades.html", active_page="grade")
 
 
+@app.route("/teacher/grade/data")
+def teacher_grade_data():
+    if not is_logged_in() or session.get("role_id") != 2:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text("""
+        SELECT teacher_id, subject_id
+        FROM teachers
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        return jsonify({"ok": False, "error": "Teacher profile not found."}), 404
+
+    rows = db.session.execute(db.text("""
+        SELECT
+            c.class_id,
+            c.class_name,
+            c.grade_level,
+            COUNT(DISTINCT s.student_id) AS student_count,
+            COUNT(tr.result_id) AS taken_count,
+            SUM(CASE WHEN tr.quiz_score >= 60 THEN 1 ELSE 0 END) AS pass_count,
+            AVG(tr.quiz_score) AS avg_score,
+            MAX(tr.test_date) AS last_test,
+            (
+                SELECT MIN(q.start_time)
+                FROM quizzes q
+                WHERE q.class_id = c.class_id
+                  AND q.teacher_id = :tid
+                  AND q.is_active = 1
+                AND q.start_time >= NOW()
+            ) AS next_test
+        FROM classes c
+        JOIN classes_has_teachers cht ON cht.classes_class_id = c.class_id
+        LEFT JOIN students s ON s.class_id = c.class_id
+        LEFT JOIN test_results tr ON tr.class_id = c.class_id AND tr.teacher_id = :tid
+        WHERE cht.teachers_teacher_id = :tid AND c.is_active = 1
+        GROUP BY c.class_id, c.class_name, c.grade_level
+        ORDER BY c.grade_level, c.class_name
+    """), {"tid": teacher_row.teacher_id}).fetchall()
+
+    subject_row = db.session.execute(db.text("""
+        SELECT subject_name
+        FROM subjects
+        WHERE subject_id = :sid
+    """), {"sid": teacher_row.subject_id}).fetchone()
+
+    classes = []
+    for r in rows:
+        taken = r.taken_count or 0
+        passed = r.pass_count or 0
+        pass_rate = 0
+        if taken:
+            pass_rate = round((passed / taken) * 100, 2)
+
+        classes.append({
+            "class_id": r.class_id,
+            "class_name": r.class_name,
+            "grade_level": r.grade_level,
+            "student_count": r.student_count or 0,
+            "taken_count": taken,
+            "pass_rate": pass_rate,
+            "avg_score": round(float(r.avg_score), 2) if r.avg_score is not None else None,
+            "last_test": r.last_test.strftime("%b %d, %Y") if r.last_test else None,
+            "next_test": r.next_test.strftime("%b %d, %Y") if r.next_test else None,
+            "subject_name": subject_row.subject_name if subject_row else None,
+            "subjects": [subject_row.subject_name] if subject_row else []
+        })
+
+    return jsonify({"ok": True, "classes": classes})
+
+
+@app.route("/teacher/tests", methods=["GET"])
+def teacher_tests():
+    if not is_logged_in() or session.get("role_id") != 2:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text("""
+        SELECT teacher_id
+        FROM teachers
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        return jsonify([])
+
+    rows = db.session.execute(db.text("""
+        SELECT 
+            q.quiz_id,
+            q.title,
+            q.start_time,
+            q.end_time,
+            q.exam_type,
+            q.percentage_weight,
+            c.class_id,
+            c.class_name,
+            c.grade_level,
+            s.subject_id,
+            s.subject_name,
+            (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.quiz_id) AS question_count
+        FROM quizzes q
+        JOIN classes c ON c.class_id = q.class_id
+        JOIN subjects s ON s.subject_id = q.subject_id
+        WHERE q.teacher_id = :tid
+        ORDER BY q.start_time DESC
+    """), {"tid": teacher_row.teacher_id}).fetchall()
+
+    def serialize(row):
+        return {
+            "quiz_id": row.quiz_id,
+            "title": row.title,
+            "start_time": row.start_time.isoformat() if row.start_time else None,
+            "end_time": row.end_time.isoformat() if row.end_time else None,
+            "exam_type": row.exam_type,
+            "percentage_weight": row.percentage_weight,
+            "class_id": row.class_id,
+            "class_name": row.class_name,
+            "grade_level": row.grade_level,
+            "subject_id": row.subject_id,
+            "subject_name": row.subject_name,
+            "question_count": row.question_count or 0,
+        }
+
+    return jsonify([serialize(r) for r in rows])
+
+
+@app.route("/teacher/tests/<int:quiz_id>", methods=["GET", "PUT"])
+def teacher_test_detail(quiz_id):
+    if not is_logged_in() or session.get("role_id") != 2:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    teacher_row = db.session.execute(db.text("""
+        SELECT teacher_id, subject_id
+        FROM teachers
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not teacher_row:
+        return jsonify({"ok": False, "error": "Teacher profile not found."}), 404
+
+    quiz_row = db.session.execute(db.text("""
+        SELECT quiz_id, title, class_id, subject_id, exam_type, percentage_weight, start_time, end_time
+        FROM quizzes
+        WHERE quiz_id = :qid AND teacher_id = :tid
+    """), {"qid": quiz_id, "tid": teacher_row.teacher_id}).fetchone()
+
+    if not quiz_row:
+        return jsonify({"ok": False, "error": "Quiz not found."}), 404
+
+    if request.method == "GET":
+        questions = db.session.execute(db.text("""
+            SELECT question_id, question_text, option_a, option_b, option_c, option_d, correct_option
+            FROM quiz_questions
+            WHERE quiz_id = :qid
+            ORDER BY question_id
+        """), {"qid": quiz_id}).fetchall()
+
+        duration_minutes = int((quiz_row.end_time - quiz_row.start_time).total_seconds() // 60) if quiz_row.end_time and quiz_row.start_time else None
+
+        return jsonify({
+            "ok": True,
+            "quiz": {
+                "quiz_id": quiz_row.quiz_id,
+                "title": quiz_row.title,
+                "class_id": quiz_row.class_id,
+                "subject_id": quiz_row.subject_id,
+                "exam_type": quiz_row.exam_type,
+                "percentage_weight": quiz_row.percentage_weight,
+                "testDate": quiz_row.start_time.date().isoformat() if quiz_row.start_time else None,
+                "testTime": quiz_row.start_time.strftime("%H:%M") if quiz_row.start_time else None,
+                "duration": duration_minutes,
+                "questions": [
+                    {
+                        "question_id": q.question_id,
+                        "question": q.question_text,
+                        "option_a": q.option_a,
+                        "option_b": q.option_b,
+                        "option_c": q.option_c,
+                        "option_d": q.option_d,
+                        "correct_option": q.correct_option,
+                    }
+                    for q in questions
+                ]
+            }
+        })
+
+    # PUT (update)
+    data = request.get_json(silent=True) or {}
+
+    required = {
+        "title": data.get("title", "").strip(),
+        "subject_id": data.get("subject_id"),
+        "class_id": data.get("class_id"),
+        "duration": data.get("duration"),
+        "testDate": data.get("testDate"),
+        "testTime": data.get("testTime"),
+    }
+
+    missing = [k for k, v in required.items() if not v and v != 0]
+    if missing:
+        return jsonify({"ok": False, "error": f"Missing fields: {', '.join(missing)}"}), 400
+
+    try:
+        title = required["title"]
+        subject_id = int(required["subject_id"])
+        class_id = int(required["class_id"])
+        duration = int(required["duration"])
+        test_date = required["testDate"]
+        test_time = required["testTime"]
+        start_dt = datetime.strptime(f"{test_date} {test_time}", "%Y-%m-%d %H:%M")
+        end_dt = start_dt + timedelta(minutes=duration)
+    except Exception:
+        return jsonify({"ok": False, "error": "Invalid field types."}), 400
+
+    questions = data.get("questions") or []
+    if not questions:
+        return jsonify({"ok": False, "error": "At least one question is required."}), 400
+
+    exam_type = data.get("exam_type") or quiz_row.exam_type or "Quiz"
+    percentage_weight = data.get("percentage_weight") or quiz_row.percentage_weight or 0
+
+    try:
+        db.session.execute(db.text("""
+            UPDATE quizzes
+            SET title = :title,
+                class_id = :class_id,
+                subject_id = :subject_id,
+                exam_type = :exam_type,
+                percentage_weight = :percentage_weight,
+                start_time = :start_time,
+                end_time = :end_time
+            WHERE quiz_id = :qid AND teacher_id = :tid
+        """), {
+            "title": title,
+            "class_id": class_id,
+            "subject_id": subject_id,
+            "exam_type": exam_type,
+            "percentage_weight": percentage_weight,
+            "start_time": start_dt,
+            "end_time": end_dt,
+            "qid": quiz_id,
+            "tid": teacher_row.teacher_id
+        })
+
+        db.session.execute(db.text("DELETE FROM quiz_questions WHERE quiz_id = :qid"), {"qid": quiz_id})
+
+        for q in questions:
+            db.session.execute(db.text("""
+                INSERT INTO quiz_questions 
+                    (quiz_id, question_text, option_a, option_b, option_c, option_d, correct_option)
+                VALUES 
+                    (:quiz_id, :question_text, :option_a, :option_b, :option_c, :option_d, :correct_option)
+            """), {
+                "quiz_id": quiz_id,
+                "question_text": q.get("question", "").strip(),
+                "option_a": q.get("option_a", ""),
+                "option_b": q.get("option_b", ""),
+                "option_c": q.get("option_c", ""),
+                "option_d": q.get("option_d", ""),
+                "correct_option": q.get("correct_option", "")
+            })
+
+        db.session.commit()
+        log_activity(user_id, f"Updated quiz '{title}'")
+
+        return jsonify({"ok": True})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/student")
 def student_dashboard():
     if not is_logged_in() or session.get("role_id") != 3:
         return redirect(url_for("login"))
-    return render_template("student/student_dashboard.html")
+    user_id = session.get("user_id")
+
+    now = datetime.now()
+
+    student_row = db.session.execute(db.text("""
+        SELECT s.student_id, s.class_id
+        FROM students s
+        WHERE s.users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    available_quizzes = []
+
+    if student_row and student_row.class_id:
+        rows = db.session.execute(db.text("""
+            SELECT 
+                q.quiz_id,
+                q.title,
+                q.start_time,
+                q.end_time,
+                q.exam_type,
+                q.percentage_weight,
+                q.class_id,
+                c.class_name,
+                c.grade_level,
+                q.subject_id,
+                s.subject_name,
+                q.teacher_id,
+                (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.quiz_id) AS question_count
+            FROM quizzes q
+            JOIN classes c ON c.class_id = q.class_id
+            JOIN subjects s ON s.subject_id = q.subject_id
+            WHERE q.class_id = :cid AND q.is_active = 1
+            ORDER BY q.start_time DESC
+        """), {"cid": student_row.class_id}).fetchall()
+
+        for r in rows:
+            duration_minutes = None
+            if r.start_time and r.end_time:
+                duration_minutes = int((r.end_time - r.start_time).total_seconds() // 60)
+
+            status = "available"
+            if r.start_time and now < r.start_time:
+                status = "upcoming"
+            if r.end_time and now > r.end_time:
+                status = "closed"
+
+            exam_type = (r.exam_type or "Quiz").strip()
+            exam_key = exam_type.lower()
+
+            available_quizzes.append({
+                "id": r.quiz_id,
+                "title": r.title,
+                "subject": r.subject_name,
+                "class_name": r.class_name,
+                "grade_level": r.grade_level,
+                "type": exam_key,
+                "display_type": exam_type,
+                "question_count": r.question_count or 0,
+                "start_time": r.start_time.isoformat() if r.start_time else None,
+                "end_time": r.end_time.isoformat() if r.end_time else None,
+                "duration": duration_minutes or 30,
+                "status": status,
+                "percentage_weight": r.percentage_weight or 0,
+            })
+
+    return render_template("student/student_dashboard.html", available_quizzes=available_quizzes)
 
 
 @app.route("/student/quiz")
 def student_quiz():
     if not is_logged_in() or session.get("role_id") != 3:
         return redirect(url_for("login"))
-    return render_template("student/quiz.html")
+    quiz_id = request.args.get("id", type=int)
+
+    user_id = session.get("user_id")
+    student_row = db.session.execute(db.text("""
+        SELECT s.student_id, s.class_id
+        FROM students s
+        WHERE s.users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not student_row:
+        flash("Student profile not found.", "danger")
+        return redirect(url_for("student_dashboard"))
+
+    quiz_data = None
+
+    if quiz_id:
+        quiz_row = db.session.execute(db.text("""
+            SELECT 
+                q.quiz_id,
+                q.title,
+                q.class_id,
+                q.subject_id,
+                q.teacher_id,
+                q.exam_type,
+                q.percentage_weight,
+                q.start_time,
+                q.end_time,
+                c.class_name,
+                c.grade_level,
+                s.subject_name
+            FROM quizzes q
+            JOIN classes c ON c.class_id = q.class_id
+            JOIN subjects s ON s.subject_id = q.subject_id
+            WHERE q.quiz_id = :qid AND q.is_active = 1
+        """), {"qid": quiz_id}).fetchone()
+
+        if quiz_row and quiz_row.class_id == student_row.class_id:
+            now = datetime.now()
+            if quiz_row.start_time and now < quiz_row.start_time:
+                flash("This quiz is not open yet.", "warning")
+                return redirect(url_for("student_dashboard"))
+            if quiz_row.end_time and now > quiz_row.end_time:
+                flash("This quiz is closed.", "danger")
+                return redirect(url_for("student_dashboard"))
+            questions = db.session.execute(db.text("""
+                SELECT question_id, question_text, option_a, option_b, option_c, option_d, correct_option
+                FROM quiz_questions
+                WHERE quiz_id = :qid
+                ORDER BY question_id
+            """), {"qid": quiz_id}).fetchall()
+
+            if not questions:
+                flash("This quiz has no questions configured yet.", "warning")
+                return redirect(url_for("student_dashboard"))
+
+            duration_minutes = 30
+            if quiz_row.start_time and quiz_row.end_time:
+                duration_minutes = int((quiz_row.end_time - quiz_row.start_time).total_seconds() // 60)
+
+            def option_index(letter: str) -> int:
+                mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
+                return mapping.get((letter or "").upper(), 0)
+
+            quiz_data = {
+                "info": {
+                    "id": quiz_row.quiz_id,
+                    "title": quiz_row.title,
+                    "subject": quiz_row.subject_name,
+                    "timeLimit": duration_minutes,
+                    "type": quiz_row.exam_type or "exam",
+                    "instructions": [
+                        "Read each question carefully before selecting your answer",
+                        "You can navigate between questions using the Previous and Next buttons",
+                        "Your answers will be auto-saved every 30 seconds",
+                        "Make sure to submit your quiz before the timer runs out",
+                        "Once submitted, you cannot change your answers"
+                    ]
+                },
+                "questions": [
+                    {
+                        "id": q.question_id,
+                        "text": q.question_text,
+                        "type": "mcq",
+                        "options": [q.option_a, q.option_b, q.option_c, q.option_d],
+                        "correctAnswer": option_index(q.correct_option),
+                    }
+                    for q in questions
+                ]
+            }
+
+    return render_template("student/quiz.html", quiz_data=quiz_data)
+
+
+@app.route("/student/quizzes/<int:quiz_id>/submit", methods=["POST"])
+def student_submit_quiz(quiz_id):
+    if not is_logged_in() or session.get("role_id") != 3:
+        return redirect(url_for("login"))
+
+    user_id = session.get("user_id")
+    student_row = db.session.execute(db.text("""
+        SELECT s.student_id, s.class_id
+        FROM students s
+        WHERE s.users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not student_row:
+        return jsonify({"ok": False, "error": "Student profile not found."}), 404
+
+    quiz_row = db.session.execute(db.text("""
+        SELECT quiz_id, class_id, subject_id, teacher_id, start_time, end_time
+        FROM quizzes
+        WHERE quiz_id = :qid AND is_active = 1
+    """), {"qid": quiz_id}).fetchone()
+
+    if not quiz_row or quiz_row.class_id != student_row.class_id:
+        return jsonify({"ok": False, "error": "Quiz not available."}), 404
+
+    now = datetime.now()
+    if quiz_row.start_time and now < quiz_row.start_time:
+        return jsonify({"ok": False, "error": "Quiz not open yet."}), 403
+    if quiz_row.end_time and now > quiz_row.end_time:
+        return jsonify({"ok": False, "error": "Quiz has closed."}), 403
+
+    data = request.get_json(silent=True) or {}
+    answers = data.get("answers") or []
+
+    if not answers:
+        return jsonify({"ok": False, "error": "No answers submitted."}), 400
+
+    answer_map = {int(item.get("question_id")): (item.get("selected_option") or "").upper() for item in answers if item.get("question_id")}
+
+    if not answer_map:
+        return jsonify({"ok": False, "error": "Invalid answers payload."}), 400
+
+    questions = db.session.execute(db.text("""
+        SELECT question_id, correct_option
+        FROM quiz_questions
+        WHERE quiz_id = :qid
+    """), {"qid": quiz_id}).fetchall()
+
+    if not questions:
+        return jsonify({"ok": False, "error": "Quiz has no questions."}), 400
+
+    mapping = {"A": 0, "B": 1, "C": 2, "D": 3}
+    total = len(questions)
+    correct = 0
+
+    for q in questions:
+        sel_letter = answer_map.get(q.question_id)
+        if not sel_letter:
+            continue
+        if mapping.get(sel_letter, -1) == mapping.get((q.correct_option or "").upper(), -2):
+            correct += 1
+
+    score_percent = round((correct / total) * 100, 2)
+
+    def letter_grade(score: float) -> str:
+        if score >= 90:
+            return "A"
+        if score >= 80:
+            return "B"
+        if score >= 70:
+            return "C"
+        if score >= 60:
+            return "D"
+        return "F"
+
+    grade_letter = letter_grade(score_percent)
+
+    try:
+        db.session.execute(db.text("""
+            INSERT INTO test_results (test_date, student_id, class_id, subject_id, teacher_id, quiz_score)
+            VALUES (:test_date, :student_id, :class_id, :subject_id, :teacher_id, :quiz_score)
+        """), {
+            "test_date": datetime.utcnow(),
+            "student_id": student_row.student_id,
+            "class_id": quiz_row.class_id,
+            "subject_id": quiz_row.subject_id,
+            "teacher_id": quiz_row.teacher_id,
+            "quiz_score": score_percent
+        })
+        db.session.commit()
+        log_activity(user_id, f"Submitted quiz {quiz_id} with score {score_percent}%")
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+    return jsonify({
+        "ok": True,
+        "score": score_percent,
+        "correct": correct,
+        "total": total,
+        "grade": grade_letter
+    })
 
 
 @app.route("/student/report")
@@ -2026,6 +3189,98 @@ def student_report():
     if not is_logged_in() or session.get("role_id") != 3:
         return redirect(url_for("login"))
     return render_template("student/report.html")
+
+
+@app.route("/student/report/data")
+def student_report_data():
+    if not is_logged_in() or session.get("role_id") != 3:
+        return jsonify({"ok": False, "error": "Unauthorized"}), 401
+
+    user_id = session.get("user_id")
+    student_row = db.session.execute(db.text("""
+        SELECT student_id
+        FROM students
+        WHERE users_user_id = :uid
+    """), {"uid": user_id}).fetchone()
+
+    if not student_row:
+        return jsonify({"ok": False, "error": "Student profile not found."}), 404
+
+    rows = db.session.execute(db.text("""
+        SELECT
+            tr.result_id,
+            tr.test_date,
+            tr.quiz_score,
+            tr.grade,
+            sub.subject_name,
+            u.full_name AS teacher_name
+        FROM test_results tr
+        JOIN subjects sub ON sub.subject_id = tr.subject_id
+        JOIN teachers t ON t.teacher_id = tr.teacher_id
+        JOIN users u ON u.user_id = t.users_user_id
+        WHERE tr.student_id = :sid
+        ORDER BY tr.test_date DESC
+    """), {"sid": student_row.student_id}).fetchall()
+
+    def letter(score: float) -> str:
+        if score is None:
+            return "-"
+        try:
+            s = float(score)
+        except Exception:
+            return str(score)
+        if s >= 90:
+            return "A"
+        if s >= 80:
+            return "B"
+        if s >= 70:
+            return "C"
+        if s >= 60:
+            return "D"
+        return "F"
+
+    data_rows = []
+    scores = []
+    labels = []
+
+    for r in rows:
+        grade_val = r.grade if r.grade is not None else letter(r.quiz_score)
+        data_rows.append({
+            "id": r.result_id,
+            "title": r.subject_name,
+            "subject": r.subject_name,
+            "teacher": r.teacher_name,
+            "date": r.test_date.isoformat() if r.test_date else None,
+            "score": float(r.quiz_score) if r.quiz_score is not None else None,
+            "grade": grade_val,
+            "status": "Completed",
+        })
+        if r.test_date and r.quiz_score is not None:
+            labels.append(r.test_date.strftime("%b %d"))
+            try:
+                scores.append(float(r.quiz_score))
+            except Exception:
+                scores.append(None)
+
+    total_completed = len(data_rows)
+    numeric_scores = [s for s in scores if s is not None]
+    avg_score = round(sum(numeric_scores) / len(numeric_scores), 2) if numeric_scores else None
+    top_score = max(numeric_scores) if numeric_scores else None
+
+    summary = {
+        "completed": total_completed,
+        "avg_score": avg_score,
+        "pending": 0,
+        "top": top_score,
+    }
+
+    return jsonify({
+        "ok": True,
+        "summary": summary,
+        "labels": labels[::-1],
+        "scores": scores[::-1],
+        "results": data_rows,
+    })
 
 @app.route("/admin/manage_grades", methods=["GET"])
 def admin_manage_grades():

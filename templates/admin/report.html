@@ -329,14 +329,15 @@
 
     <form id="reportForm">
         <div class="filter-row">
-            <select class="filter-select" id="gradeFilter" name="grade" onchange="updateClassesForGrade()">
+            <select class="filter-select" id="gradeFilter" name="grade"
+                onchange="updateClassesForGrade(); generateReport()">
                 <option value="" {% if filters.grade=='' %}selected{% endif %}>All Grades</option>
                 <option value="7" {% if filters.grade=='7' %}selected{% endif %}>Grade 7</option>
                 <option value="8" {% if filters.grade=='8' %}selected{% endif %}>Grade 8</option>
                 <option value="9" {% if filters.grade=='9' %}selected{% endif %}>Grade 9</option>
             </select>
 
-            <select class="filter-select" id="classFilter" name="class">
+            <select class="filter-select" id="classFilter" name="class" onchange="generateReport()">
                 <option value="" {% if filters.class=='' %}selected{% endif %}>All Classes</option>
                 {% for class in classes %}
                 <option value="{{ class.class_name }}" data-grade="{{ class.grade_level }}" {% if
@@ -345,7 +346,7 @@
                 {% endfor %}
             </select>
 
-            <select class="filter-select" id="subjectFilter" name="subject">
+            <select class="filter-select" id="subjectFilter" name="subject" onchange="generateReport()">
                 <option value="" {% if filters.subject=='' %}selected{% endif %}>All Subjects</option>
                 {% for subject in subjects %}
                 <option value="{{ subject.subject_name }}" {% if filters.subject==subject.subject_name %}selected{%
@@ -353,21 +354,11 @@
                 {% endfor %}
             </select>
 
-            <select class="filter-select" id="yearFilter" name="year">
-                <option value="2024-2025" {% if filters.year=='2024-2025' %}selected{% endif %}>Academic Year 2024-2025
-                </option>
-                <option value="2023-2024" {% if filters.year=='2023-2024' %}selected{% endif %}>Academic Year 2023-2024
-                </option>
-                <option value="2022-2023" {% if filters.year=='2022-2023' %}selected{% endif %}>Academic Year 2022-2023
-                </option>
-            </select>
-
-            <select class="filter-select" id="termFilter" name="term">
-                <option value="" {% if filters.term=='' %}selected{% endif %}>All Terms</option>
-                <option value="1" {% if filters.term=='1' %}selected{% endif %}>Term 1</option>
-                <option value="2" {% if filters.term=='2' %}selected{% endif %}>Term 2</option>
-                <option value="midterm" {% if filters.term=='midterm' %}selected{% endif %}>Midterm</option>
-                <option value="final" {% if filters.term=='final' %}selected{% endif %}>Final Exam</option>
+            <select class="filter-select" id="yearFilter" name="year" onchange="generateReport()">
+                <option value="" {% if filters.year=='' %}selected{% endif %}>All Years</option>
+                {% for ay in academic_years %}
+                <option value="{{ ay }}" {% if filters.year==ay %}selected{% endif %}>Academic Year {{ ay }}</option>
+                {% endfor %}
             </select>
 
             <button type="button" class="btn-generate" onclick="generateReport()">
@@ -450,47 +441,22 @@
     <h3 class="section-title">Grade Distribution</h3>
     <div class="chart-divider"></div>
 
+    {% if grade_distribution and grade_distribution|length > 0 %}
     <div class="grade-bars">
+        {% for item in grade_distribution %}
         <div class="grade-bar-item">
-            <div class="grade-label">A (90-100)</div>
+            <div class="grade-label">{{ item.label }}</div>
             <div class="grade-bar-bg">
-                <div class="grade-bar-fill" style="width: 28%; background: #10b981;">28%</div>
+                <div class="grade-bar-fill" style="width: {{ item.percent }}%; background: {{ item.color }};">{{
+                    item.percent }}%</div>
             </div>
-            <div class="grade-count">91 students</div>
+            <div class="grade-count">{{ item.count }} students</div>
         </div>
-
-        <div class="grade-bar-item">
-            <div class="grade-label">B (80-89)</div>
-            <div class="grade-bar-bg">
-                <div class="grade-bar-fill" style="width: 35%; background: #3b82f6;">35%</div>
-            </div>
-            <div class="grade-count">113 students</div>
-        </div>
-
-        <div class="grade-bar-item">
-            <div class="grade-label">C (70-79)</div>
-            <div class="grade-bar-bg">
-                <div class="grade-bar-fill" style="width: 22%; background: #f59e0b;">22%</div>
-            </div>
-            <div class="grade-count">71 students</div>
-        </div>
-
-        <div class="grade-bar-item">
-            <div class="grade-label">D (60-69)</div>
-            <div class="grade-bar-bg">
-                <div class="grade-bar-fill" style="width: 10%; background: #f97316;">10%</div>
-            </div>
-            <div class="grade-count">32 students</div>
-        </div>
-
-        <div class="grade-bar-item">
-            <div class="grade-label">F (0-59)</div>
-            <div class="grade-bar-bg">
-                <div class="grade-bar-fill" style="width: 5%; background: #ef4444;">5%</div>
-            </div>
-            <div class="grade-count">17 students</div>
-        </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <p style="color: #64748b;">No scores available for the selected filters.</p>
+    {% endif %}
 </div>
 
 <!-- ================= DETAILED STUDENT RESULTS TABLE ================= -->
@@ -512,8 +478,6 @@
                     <th>Test Date</th>
                     <th>Score</th>
                     <th>Grade</th>
-                    <th>Status</th>
-                    <th>Remarks</th>
                 </tr>
             </thead>
             <tbody>
@@ -526,26 +490,45 @@
                     <td>{{ result.subject }}</td>
                     <td>{{ result.test_date }}</td>
                     <td>{{ result.score }}</td>
-                    <td>{{ result.grade }}</td>
                     <td>
-                        {% if result.score >= 90 %}
-                        <span class="badge badge-success">Excellent</span>
-                        {% elif result.score >= 80 %}
-                        <span class="badge badge-info">Good</span>
-                        {% elif result.score >= 70 %}
-                        <span class="badge badge-info">Good</span>
-                        {% elif result.score >= 60 %}
-                        <span class="badge badge-warning">Average</span>
+                        {% set g = (result.grade|string).upper() %}
+                        {% set badge_color = '#6b7280' %}
+                        {% if g in ['A','B','C','D','F'] %}
+                        {% if g == 'A' %}
+                        {% set badge_color = '#16a34a' %}
+                        {% elif g == 'B' %}
+                        {% set badge_color = '#0ea5e9' %}
+                        {% elif g == 'C' %}
+                        {% set badge_color = '#8b5cf6' %}
+                        {% elif g == 'D' %}
+                        {% set badge_color = '#f59e0b' %}
+                        {% elif g == 'F' %}
+                        {% set badge_color = '#ef4444' %}
+                        {% endif %}
+                        <span class="badge" style="background:{{ badge_color }};color:#fff;">{{ g }}</span>
+                        {% elif result.score != '--' %}
+                        {% set score_val = result.score|float %}
+                        {% if score_val >= 90 %}
+                        {% set badge_color = '#16a34a' %}
+                        {% elif score_val >= 80 %}
+                        {% set badge_color = '#0ea5e9' %}
+                        {% elif score_val >= 70 %}
+                        {% set badge_color = '#8b5cf6' %}
+                        {% elif score_val >= 60 %}
+                        {% set badge_color = '#f59e0b' %}
                         {% else %}
-                        <span class="badge badge-danger">Needs Support</span>
+                        {% set badge_color = '#ef4444' %}
+                        {% endif %}
+                        <span class="badge" style="background:{{ badge_color }};color:#fff;">{{ result.grade }}</span>
+                        {% else %}
+                        <span class="badge badge-secondary">--</span>
                         {% endif %}
                     </td>
-                    <td>{{ result.remarks }}</td>
                 </tr>
                 {% endfor %}
                 {% else %}
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 30px; color: #64748b;">
+                    <td colspan="7" style="text-align: center; padding: 30px; color: #64748b;">
                         <i class="bi bi-inbox" style="font-size: 48px; display: block; margin-bottom: 10px;"></i>
                         No test results available yet. Results will appear here once exams are graded.
                     </td>
@@ -617,6 +600,9 @@
     }
 
     // Initialize charts only once when DOM is ready
+    const performanceData = {{ performance_trend| tojson }};
+    const subjectAverages = {{ subject_averages| tojson }};
+
     document.addEventListener('DOMContentLoaded', function () {
         // Destroy existing chart instances if they exist
         if (performanceChartInstance) {
@@ -631,60 +617,31 @@
         // Performance Trend Chart
         const perfCtx = document.getElementById('performanceChart');
         if (perfCtx) {
+            const labels = performanceData?.labels || [];
+            const values = performanceData?.values || [];
             performanceChartInstance = new Chart(perfCtx, {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Week 7', 'Week 8'],
+                    labels: labels,
                     datasets: [
                         {
-                            label: 'Grade 7',
-                            data: [72, 75, 78, 76, 80, 82, 85, 84],
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4,
-                            borderWidth: 3,
-                            fill: true
-                        },
-                        {
-                            label: 'Grade 8',
-                            data: [68, 70, 73, 74, 77, 79, 81, 83],
-                            borderColor: '#10b981',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4,
-                            borderWidth: 3,
-                            fill: true
-                        },
-                        {
-                            label: 'Grade 9',
-                            data: [75, 77, 76, 79, 81, 84, 86, 88],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-                            tension: 0.4,
-                            borderWidth: 3,
-                            fill: true
+                            label: 'Average Score',
+                            data: values,
+                            backgroundColor: '#3b82f6'
                         }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 0  // Disable animation to prevent continuous redraw
-                    },
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
-                    },
+                    animation: { duration: 0 },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
                             max: 100,
                             ticks: {
-                                callback: function (value) {
-                                    return value + '%';
-                                }
+                                callback: function (value) { return value + '%'; }
                             }
                         }
                     }
@@ -695,23 +652,16 @@
         // Subject Comparison Chart
         const subjCtx = document.getElementById('subjectChart');
         if (subjCtx) {
+            const labels = Object.keys(subjectAverages || {});
+            const data = Object.values(subjectAverages || {});
             subjectChartInstance = new Chart(subjCtx, {
                 type: 'bar',
                 data: {
-                    labels: ['Math', 'English', 'Physics', 'Chemistry', 'Biology', 'ICT', 'History', 'Geography'],
+                    labels: labels,
                     datasets: [{
                         label: 'Average Score',
-                        data: [78, 82, 75, 73, 80, 85, 77, 79],
-                        backgroundColor: [
-                            '#3b82f6',
-                            '#10b981',
-                            '#f59e0b',
-                            '#ef4444',
-                            '#8b5cf6',
-                            '#06b6d4',
-                            '#f97316',
-                            '#ec4899'
-                        ],
+                        data: data,
+                        backgroundColor: labels.map((_, idx) => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899'][idx % 8]),
                         borderRadius: 8,
                         barThickness: 40
                     }]
@@ -719,14 +669,8 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: {
-                        duration: 0  // Disable animation to prevent continuous redraw
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
+                    animation: { duration: 0 },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
                             beginAtZero: true,
@@ -771,7 +715,6 @@
         const classVal = document.getElementById('classFilter').value;
         const subject = document.getElementById('subjectFilter').value;
         const year = document.getElementById('yearFilter').value;
-        const term = document.getElementById('termFilter').value;
 
         // Build URL with query parameters
         const params = new URLSearchParams();
@@ -779,7 +722,6 @@
         if (classVal) params.append('class', classVal);
         if (subject) params.append('subject', subject);
         if (year) params.append('year', year);
-        if (term) params.append('term', term);
 
         // Redirect to filtered report
         window.location.href = '/admin/report?' + params.toString();

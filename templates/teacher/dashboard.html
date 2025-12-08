@@ -121,6 +121,28 @@
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
 
+    .result-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .result-row {
+        background: rgba(255, 255, 255, 0.7);
+        padding: 10px 12px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .result-row small {
+        color: #5f6368;
+    }
+
     /* Charts */
     .charts-container {
         display: grid;
@@ -137,6 +159,10 @@
         box-shadow: 0 5px 12px rgba(0, 0, 0, 0.15);
         text-align: center;
     }
+
+    .muted {
+        color: #708090;
+    }
 </style>
 {% endblock %}
 
@@ -146,25 +172,27 @@
 <div class="dashboard-hero">Teacher Dashboard</div>
 
 <div class="container">
+    <div id="dashboard-error" class="alert alert-danger d-none"></div>
     <div class="cards">
-        <a href="students.html" class="card1">
+        <a href="{{ url_for('teacher_students') }}" class="card1">
             <img src="https://img.icons8.com/?size=100&id=25220&format=png&color=ffffff" width="45">
-            <h4>Student</h4>
-            <p>60 Students</p>
+            <h4>Students</h4>
+            <p id="students-count" class="mb-0 muted">--</p>
         </a>
-        <a href="grades.html" class="card2">
+        <a href="{{ url_for('teacher_grade') }}" class="card2">
             <img src="https://img.icons8.com/?size=100&id=4910&format=png&color=ffffff" width="45">
-            <h4> Grades</h4>
-            <p>9 Grades</p>
+            <h4>Classes</h4>
+            <p id="classes-count" class="mb-0 muted">--</p>
         </a>
-        <a href="test_creation.html" class="card3">
+        <a href="{{ url_for('teacher_test_creation') }}" class="card3">
             <img src="https://img.icons8.com/?size=100&id=56576&format=png&color=ffffff" width="45">
             <h4>Tests</h4>
-            <p>12 Tests</p>
+            <p id="tests-count" class="mb-0 muted">--</p>
         </a>
-        <a href="report.html" class="card5">
+        <a href="{{ url_for('teacher_report') }}" class="card5">
             <img src="https://img.icons8.com/ios-filled/50/ffffff/report-card.png" width="45">
-            <h4>Report</h4>
+            <h4>Results</h4>
+            <p id="results-count" class="mb-0 muted">--</p>
         </a>
     </div>
 </div>
@@ -172,34 +200,19 @@
 <div class="row-box">
     <!-- Upcoming Tests -->
     <div class="upcoming-box">
-        <h3>Upcoming Tests</h3>
-        <label><strong>Select Subject:</strong></label>
-        <select id="subject" class="form-control mb-2">
-            <option value="" disabled selected>Select a subject</option>
-            <option value="ICT">ICT</option>
-            <option value="Math">Math</option>
-            <option value="English">Enlish</option>
-            <option value="History">History</option>
-            <option value="Geography">Geography</option>
-            <option value="Physics">Physics</option>
-            <option value="Biology">Biology</option>
-            <option value="Chimistry">Chimistry</option>
-            <option value="Khmer">khmer</option>
-        </select>
-        <input type="date" id="date" class="form-control mb-2">
-        <input type="time" id="time" class="form-control mb-2">
-        <button class="btn btn-primary w-100 mb-3" onclick="addTest()">Add Test</button>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3 class="mb-0">Upcoming Tests</h3>
+            <a class="btn btn-sm btn-outline-primary" href="{{ url_for('teacher_test_creation') }}">Create</a>
+        </div>
         <div id="testContainer">
-            <p class="text-center text-muted">No upcoming tests yet.</p>
+            <p class="text-center text-muted">Loading...</p>
         </div>
     </div>
-    <!-- Announcements -->
+    <!-- Recent Results -->
     <div class="announcement-box">
-        <h5>📢 Announcements</h5>
-        <ul>
-            <li>📌 Math test results due Friday.</li>
-            <li>📌 Parent-teacher meeting on Monday.</li>
-            <li>📌 Submit monthly reports by 20th Nov.</li>
+        <h5>📈 Recent Results</h5>
+        <ul id="recentResults" class="result-list">
+            <li class="text-center text-muted">Loading...</li>
         </ul>
     </div>
 </div>
@@ -218,69 +231,158 @@
 </div>
 
 <script>
-    // Upcoming Tests Logic
     const testContainer = document.getElementById("testContainer");
-    let tests = [];
+    const recentResultsList = document.getElementById("recentResults");
+    const errorBox = document.getElementById("dashboard-error");
 
-    function addTest() {
-        const subject = document.getElementById("subject").value;
-        const date = document.getElementById("date").value;
-        const time = document.getElementById("time").value;
-        if (!subject || !date || !time) { alert("Fill all fields"); return; }
+    let passFailChart = null;
+    let gradePieChart = null;
 
-        tests.push({ subject, date, time });
-        document.getElementById("subject").value = "";
-        document.getElementById("date").value = "";
-        document.getElementById("time").value = "";
+    document.addEventListener("DOMContentLoaded", () => {
+        loadDashboard();
+    });
 
-        renderTests();
+    function setText(id, text) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = text; }
     }
 
-    function renderTests() {
+    async function loadDashboard() {
+        try {
+            const res = await fetch("{{ url_for('teacher_dashboard_data') }}");
+            const json = await res.json();
+
+            if (!json.ok) {
+                showError(json.error || "Unable to load dashboard data.");
+                return;
+            }
+
+            const data = json.data || {};
+            renderSummary(data.summary || {});
+            renderUpcoming(data.upcoming_tests || []);
+            renderRecent(data.recent_results || []);
+            renderCharts(data.pass_fail || [], data.tests_by_grade || []);
+        } catch (err) {
+            console.error(err);
+            showError("Unable to load dashboard data.");
+        }
+    }
+
+    function showError(message) {
+        errorBox.classList.remove("d-none");
+        errorBox.textContent = message;
+    }
+
+    function renderSummary(summary) {
+        setText("students-count", `${summary.total_students || 0} Students`);
+        setText("classes-count", `${summary.total_classes || 0} Classes`);
+        setText("tests-count", `${summary.total_tests || 0} Tests`);
+        setText("results-count", `${summary.total_results || 0} Results`);
+    }
+
+    function renderUpcoming(tests) {
         testContainer.innerHTML = "";
-        if (tests.length === 0) {
-            testContainer.innerHTML = "<p class='text-center text-muted'>No upcoming tests yet.</p>";
+        if (!tests.length) {
+            testContainer.innerHTML = "<p class='text-center text-muted'>No upcoming tests scheduled.</p>";
             return;
         }
-        tests.forEach((t, index) => {
+
+        tests.forEach((t) => {
+            const start = formatDateTime(t.start_time);
             const div = document.createElement("div");
             div.className = "test-card";
             div.innerHTML = `
-            <div class="test-info">
-                <p><strong>${t.subject}</strong></p>
-                <p>📅 ${t.date} ⏰ ${t.time}</p>
-            </div>
-            <button class="delete-btn" onclick="deleteTest(${index})">Delete</button>
-        `;
+                <div class="test-info">
+                    <p class="mb-1"><strong>${escapeHtml(t.title || "Untitled Test")}</strong></p>
+                    <p class="mb-0">${escapeHtml(t.subject_name || "")} · ${escapeHtml(t.class_name || "")}</p>
+                    <small class="text-muted">${start || "Scheduled"}</small>
+                </div>
+            `;
             testContainer.appendChild(div);
         });
     }
 
-    function deleteTest(i) {
-        tests.splice(i, 1);
-        renderTests();
+    function renderRecent(results) {
+        recentResultsList.innerHTML = "";
+        if (!results.length) {
+            recentResultsList.innerHTML = "<li class='text-center text-muted'>No recent submissions.</li>";
+            return;
+        }
+
+        results.forEach((r) => {
+            const when = formatDate(r.test_date);
+            const score = r.grade !== null && r.grade !== undefined ? r.grade : r.score;
+            const scoreText = score !== null && score !== undefined ? score : "--";
+            const li = document.createElement("li");
+            li.className = "result-row";
+            li.innerHTML = `
+                <div>
+                    <strong>${escapeHtml(r.student_name || "Student")}</strong><br>
+                    <small>${escapeHtml(r.subject_name || "")} · ${escapeHtml(r.class_name || "")}</small>
+                </div>
+                <div class="text-end">
+                    <div class="fw-bold">${scoreText}</div>
+                    <small>${when || "--"}</small>
+                </div>
+            `;
+            recentResultsList.appendChild(li);
+        });
     }
 
-    // Charts Logic
-    new Chart(document.getElementById("passFailChart"), {
-        type: 'bar',
-        data: {
-            labels: ["Grade 7", "Grade 8", "Grade 9"],
-            datasets: [
-                { label: 'Pass', data: [8, 10, 9], backgroundColor: '#4caf50' },
-                { label: 'Fail', data: [2, 1, 3], backgroundColor: '#f44336' }
-            ]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
-    });
+    function renderCharts(passFail, testsByGrade) {
+        const passLabels = passFail.map((r) => r.class_name);
+        const passData = passFail.map((r) => r.pass_count);
+        const failData = passFail.map((r) => r.fail_count);
 
-    new Chart(document.getElementById("gradePieChart"), {
-        type: 'pie',
-        data: {
-            labels: ["Grade 7", "Grade 8", "Grade 9"],
-            datasets: [{ data: [12, 12, 12], backgroundColor: ["#4a6cf7", "#28d18e", "#f7b64a"] }]
-        }
-    });
+        if (passFailChart) { passFailChart.destroy(); }
+        passFailChart = new Chart(document.getElementById("passFailChart"), {
+            type: 'bar',
+            data: {
+                labels: passLabels,
+                datasets: [
+                    { label: 'Pass', data: passData, backgroundColor: '#4caf50' },
+                    { label: 'Fail', data: failData, backgroundColor: '#f44336' }
+                ]
+            },
+            options: { responsive: true, scales: { y: { beginAtZero: true } } }
+        });
+
+        const gradeLabels = testsByGrade.map((r) => `Grade ${r.grade_level || ''}`.trim());
+        const gradeCounts = testsByGrade.map((r) => r.test_count);
+
+        if (gradePieChart) { gradePieChart.destroy(); }
+        gradePieChart = new Chart(document.getElementById("gradePieChart"), {
+            type: 'pie',
+            data: {
+                labels: gradeLabels,
+                datasets: [{ data: gradeCounts, backgroundColor: ["#4a6cf7", "#28d18e", "#f7b64a", "#ff7043"] }]
+            }
+        });
+    }
+
+    function formatDateTime(value) {
+        if (!value) { return null; }
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) { return null; }
+        return dt.toLocaleString();
+    }
+
+    function formatDate(value) {
+        if (!value) { return null; }
+        const dt = new Date(value);
+        if (Number.isNaN(dt.getTime())) { return null; }
+        return dt.toLocaleDateString();
+    }
+
+    function escapeHtml(str) {
+        if (!str && str !== 0) { return ""; }
+        return `${str}`
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
 </script>
 
 {% endblock %}

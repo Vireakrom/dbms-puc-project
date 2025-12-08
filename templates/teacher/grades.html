@@ -59,74 +59,10 @@
             padding: 20px;
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
             transition: transform 0.3s, box-shadow 0.3s;
-            border-left: 8px solid;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            cursor: pointer;
-        }
-
-        .class-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.15);
-        }
-
-        /* Colors for each grade */
-        .g7 {
-            border-color: #1e88e5;
-        }
-
-        /* Blue */
-        .g8 {
-            border-color: #00c853;
-        }
-
-        /* Green */
-        .g9 {
-            border-color: #ab47bc;
-        }
-
-        /* Purple */
-
-        /* Custom Header Colors for Modal */
-        .header-g7 {
-            background-color: #1e88e5 !important;
-        }
-
-        .header-g8 {
-            background-color: #00c853 !important;
-        }
-
-        .header-g9 {
-            background-color: #ab47bc !important;
-        }
-
-        /* Custom Button Color for Grade 9 (Purple) */
-        .btn-g9-custom {
-            background-color: #ab47bc !important;
-            color: white !important;
-            border-color: #ab47bc !important;
-        }
-
-        .btn-g9-custom:hover {
-            background-color: #8e24aa !important;
-        }
-
-        .card-header-content {
-            display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 10px;
-        }
-
-        .class-card h4 {
-            margin-bottom: 5px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .test-date {
-            padding: 6px 10px;
+            loadDashboard();
             border-radius: 10px;
             display: inline-block;
             margin-top: 10px;
@@ -354,26 +290,11 @@
     <!-- Uses client-side array only; no Firebase persistence, as requested. -->
     <!-- ========================================================= -->
     <script>
-        // Global array to store class data - this array acts as the entire database for this session.
+        // Global array to store class data loaded from backend
         let classData = [];
 
-        // Mock data for initial population
-        const initialClasses = [
-            { id: 1, grade: 7, section: 'A', studentCount: 35, results: { taken: 35, pass: 88, fail: 12 }, date: '12 March' },
-            { id: 2, grade: 7, section: 'B', studentCount: 32, results: { taken: 31, pass: 75, fail: 25 }, date: '18 March' },
-            { id: 3, grade: 7, section: 'C', studentCount: 30, results: { taken: 30, pass: 95, fail: 5 }, date: '22 March' },
-
-            { id: 4, grade: 8, section: 'A', studentCount: 29, results: { taken: 29, pass: 80, fail: 20 }, date: '10 April' },
-            { id: 5, grade: 8, section: 'B', studentCount: 33, results: { taken: 33, pass: 72, fail: 28 }, date: '05 April' },
-            { id: 6, grade: 8, section: 'C', studentCount: 33, results: { taken: 32, pass: 98, fail: 2 }, date: '05 April' },
-
-            { id: 7, grade: 9, section: 'A', studentCount: 28, results: { taken: 28, pass: 91, fail: 9 }, date: '20 April' },
-            { id: 8, grade: 9, section: 'B', studentCount: 31, results: { taken: 31, pass: 65, fail: 35 }, date: '25 April' },
-            { id: 9, grade: 9, section: 'C', studentCount: 30, results: { taken: 30, pass: 87, fail: 13 }, date: '30 April' }
-        ];
-
-        // Core subjects displayed on the class cards
-        const mockSubjects = ['ICT', 'Math', 'English', 'History', 'Geography'];
+        // Placeholder subjects; replaced per class when rendering
+        const mockSubjects = ['Subject'];
 
         // Utility to generate a unique, ascending ID for client-side storage
         function getNextClassId() {
@@ -391,7 +312,7 @@
             const headerClass = `header-g${classData.grade}`;
             const studentCount = classData.studentCount;
             const results = classData.results;
-            const nextTestDate = classData.date || 'TBD';
+            const nextTestDate = classData.next_test || '';
 
             const gradeColors = {
                 // Updated G7, G8 to use a dedicated class name
@@ -419,13 +340,17 @@
                         <span class="badge" ${colors.badge}>${studentCount} Students</span>
                     </div>
                     <div class="card-body-content">
-                        <p class="text-muted small fw-bold mb-2">Core Subjects:</p>
-                        ${mockSubjects.map(sub => `<span class="subject-tag">${sub}</span>`).join('')}
+                        <p class="text-muted small fw-bold mb-2">Subject:</p>
+                        ${(classData.subjects || mockSubjects).map(sub => `<span class="subject-tag">${sub}</span>`).join('')}
                         <hr>
                         <p class="mb-1 fw-bold">Next Scheduled Test:</p>
+                        ${nextTestDate ? `
                         <span class="test-date" style="color:${colors.dateText}; background:${colors.dateBg};">
                             <i class="fa-regular fa-calendar-check"></i> ${nextTestDate}
                         </span>
+                        ` : `
+                        <span class="text-muted small">No upcoming test scheduled</span>
+                        `}
                     </div>
                     <!-- FIX: Injected buttonClass directly into the class list -->
                     <button class="btn btn-sm w-100 action-button ${buttonClass}">
@@ -592,18 +517,45 @@
 
         // --- Initialization on DOM Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            // 1. Initialize data array with mock classes
-            classData = [...initialClasses];
-
-            // 2. Render the initial dashboard view
-            renderDashboard();
-
-            // 3. Set initial pass rate value display for the modal form
-            const passRateInput = document.getElementById('newPassRate');
-            if (passRateInput) {
-                document.getElementById('passRateValue').innerText = passRateInput.value + '%';
-            }
+            loadDashboard();
         });
+
+        function normalizeClass(row) {
+            const pass = row.pass_rate != null ? Math.round(row.pass_rate) : 0;
+            const fail = 100 - pass;
+            return {
+                id: row.class_id,
+                grade: row.grade_level,
+                section: row.class_name || '',
+                studentCount: row.student_count || 0,
+                results: {
+                    taken: row.taken_count || 0,
+                    pass,
+                    fail
+                },
+                date: row.last_test || 'TBD',
+                next_test: row.next_test || null,
+                subjects: row.subjects && row.subjects.length ? row.subjects : [row.subject_name || 'Subject']
+            };
+        }
+
+        function loadDashboard() {
+            fetch('/teacher/grade/data', { credentials: 'same-origin' })
+                .then(res => res.json().then(data => ({ ok: res.ok, data })))
+                .then(result => {
+                    if (!result.ok || !result.data.ok) {
+                        console.error(result.data.error || 'Failed to load grades');
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        return;
+                    }
+                    classData = (result.data.classes || []).map(normalizeClass);
+                    renderDashboard();
+                })
+                .catch(err => {
+                    console.error(err);
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                });
+        }
     </script>
 </body>
 
