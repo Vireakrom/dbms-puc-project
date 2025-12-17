@@ -1,0 +1,12 @@
+# Core web framework
+Flask==3.1.0
+
+# Database ORM and Flask integration
+SQLAlchemy==2.0.36
+Flask-SQLAlchemy==3.1.1
+
+# MySQL driver used in db.py
+mysql-connector-python==9.1.0
+
+# Production WSGI server for Render
+gunicorn==23.0.0
