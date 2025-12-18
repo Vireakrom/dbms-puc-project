@@ -2363,8 +2363,8 @@ def teacher_students():
     """), {"uid": user_id}).fetchone()
 
     if not teacher_row:
-        flash("Teacher profile not found.", "danger")
-        return redirect(url_for("logout"))
+        flash("Teacher profile not found. Please contact the administrator to link your teacher profile.", "danger")
+        return redirect(url_for("teacher_dashboard"))
 
     classes = db.session.execute(db.text("""
         SELECT c.class_id, c.class_name, c.grade_level
@@ -2491,8 +2491,8 @@ def teacher_test_creation():
     """), {"uid": user_id}).fetchone()
 
     if not teacher_row:
-        flash("Teacher profile not found.", "danger")
-        return redirect(url_for("logout"))
+        flash("Teacher profile not found. Please contact the administrator to link your teacher profile.", "danger")
+        return redirect(url_for("teacher_dashboard"))
 
     teacher_id = teacher_row.teacher_id
 
