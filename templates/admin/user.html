@@ -275,12 +275,15 @@
                     data-status="{{ row[8] }}">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
-                    <button class="btn btn-sm btn-warning" title="Reset Password"
-                      onclick="return confirm('Generate a new temporary password for this user?');">
-                      <i class="bi bi-key"></i>
-                    </button>
-                  </form>
+                  <button
+                    class="btn btn-sm btn-warning reset-password-btn"
+                    title="Reset Password"
+                    data-bs-toggle="modal"
+                    data-bs-target="#resetPasswordModal"
+                    data-action="{{ url_for('admin_reset_password', user_id=row[3]) }}"
+                    data-name="{{ row[5] }}">
+                    <i class="bi bi-key"></i>
+                  </button>
                   <button
                     class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
                     title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}" data-bs-toggle="modal"
@@ -410,12 +413,15 @@
                     data-class-ids="{{ teacher_class_map.get(row[1], '') }}" data-status="{{ row[8] }}">
                     <i class="bi bi-pencil"></i>
                   </button>
-                  <form class="d-inline" action="{{ url_for('admin_reset_password', user_id=row[3]) }}" method="post">
-                    <button class="btn btn-sm btn-warning" title="Reset Password"
-                      onclick="return confirm('Generate a new temporary password for this user?');">
-                      <i class="bi bi-key"></i>
-                    </button>
-                  </form>
+                  <button
+                    class="btn btn-sm btn-warning reset-password-btn"
+                    title="Reset Password"
+                    data-bs-toggle="modal"
+                    data-bs-target="#resetPasswordModal"
+                    data-action="{{ url_for('admin_reset_password', user_id=row[3]) }}"
+                    data-name="{{ row[5] }}">
+                    <i class="bi bi-key"></i>
+                  </button>
                   <button
                     class="btn btn-sm btn-{% if row[8] == 1 %}danger{% else %}success{% endif %} toggle-status-btn"
                     title="{% if row[8] == 1 %}Deactivate{% else %}Activate{% endif %}" data-bs-toggle="modal"
@@ -488,6 +494,45 @@
 </div>
 
 <!-- Add User Modal -->
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title d-flex align-items-center gap-2">
+          <i class="bi bi-key-fill text-warning fs-4"></i>
+          <span>Reset Password</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form id="resetPasswordForm" action="#" method="post">
+        <div class="modal-body pt-2">
+          <div class="alert alert-light border d-flex align-items-start gap-3" role="alert">
+            <i class="bi bi-info-circle-fill text-info fs-5 mt-1"></i>
+            <div>
+              <p class="mb-2">
+                Generate a new temporary password for <strong id="resetUserName"></strong>?
+              </p>
+              <ul class="mb-0 small text-muted">
+                <li>The new password will replace their current password</li>
+                <li>They will be required to change it on next login</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-circle"></i> Cancel
+          </button>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-key"></i> Generate
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+</div>
 <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
@@ -976,6 +1021,20 @@
         <li>They will receive their account credentials</li>
       `;
     }
+  });
+
+  // Handle reset password modal - using event delegation for pagination compatibility
+  document.body.addEventListener('click', (e) => {
+    const btn = e.target.closest('.reset-password-btn');
+    if (!btn) return;
+
+    const action = btn.dataset.action;
+    const name = btn.dataset.name || 'this user';
+
+    const form = document.getElementById('resetPasswordForm');
+    const nameSpan = document.getElementById('resetUserName');
+    if (form) form.action = action;
+    if (nameSpan) nameSpan.textContent = name;
   });
 </script>
 
