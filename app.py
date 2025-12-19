@@ -1122,7 +1122,7 @@ def admin_edit_user(user_id):
         u.full_name = request.form.get("full_name", "").strip() or u.full_name
         u.email = request.form.get("email", "").strip() or u.email
         u.phone = request.form.get("phone", "").strip() or u.phone
-        
+
         # Update student or teacher specific info
         if u.role_id == 3 and u.student_profile:
             class_id = request.form.get("class_id", "").strip()
@@ -1132,7 +1132,22 @@ def admin_edit_user(user_id):
             subject_id = request.form.get("subject_id", "").strip()
             if subject_id:
                 u.teacher_profile.subject_id = int(subject_id) if subject_id else None
-        
+
+            # Update teacher classes
+            teacher_classes = request.form.getlist("class_ids[]")
+            # First, remove existing associations
+            db.session.execute(db.text("""
+                DELETE FROM classes_has_teachers WHERE teachers_teacher_id = :tid
+            """), {"tid": u.teacher_profile.teacher_id})
+            # Then, add new ones
+            for cid in teacher_classes:
+                if not cid:
+                    continue
+                db.session.execute(db.text("""
+                    INSERT INTO classes_has_teachers (classes_class_id, teachers_teacher_id)
+                    VALUES (:cid, :tid)
+                """), {"cid": int(cid), "tid": u.teacher_profile.teacher_id})
+
         db.session.commit()
         flash(f"User {u.username} has been updated.", "success")
     return redirect(url_for("admin_users"))
@@ -1788,7 +1803,6 @@ def total_add_teacher():
     log_activity(session["user_id"], f"Created teacher {full_name}")
 
     return redirect(url_for("admin_total_teachers"))
-
 
 @app.route("/admin/admin_total_teachers")
 def admin_total_teachers():
@@ -2734,7 +2748,7 @@ def teacher_tests():
             q.end_time,
             q.exam_type,
             q.percentage_weight,
-            c.class_id,
+            q.class_id,
             c.class_name,
             c.grade_level,
             s.subject_id,

@@ -842,9 +842,9 @@
   addRole.addEventListener('change', toggleAddRoleFields);
   toggleAddRoleFields();
 
-  // Populate Edit modal from row buttons and set form action - using event delegation for pagination compatibility
-  document.body.addEventListener('click', (e) => {
-    const btn = e.target.closest('.edit-user');
+  // Populate Edit modal when shown - using Bootstrap modal event
+  document.getElementById('editUserModal').addEventListener('show.bs.modal', function(event) {
+    const btn = event.relatedTarget;
     if (!btn) return;
 
     const role = btn.dataset.role;
@@ -860,7 +860,7 @@
 
     // toggle specific fields
     document.querySelector('.student-only-edit')?.classList.toggle('d-none', isTeacher);
-    document.querySelector('.teacher-only-edit')?.classList.toggle('d-none', !isTeacher);
+    document.querySelectorAll('.teacher-only-edit').forEach(el => el.classList.toggle('d-none', !isTeacher));
 
     document.getElementById('editName').value = btn.dataset.name || '';
     document.getElementById('editEmail').value = btn.dataset.email || '';
@@ -1039,3 +1039,6 @@
 </script>
 
 {% endblock %}
+
+
+
