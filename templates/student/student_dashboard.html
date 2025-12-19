@@ -297,12 +297,32 @@
     // Normalize backend fields to UI expectations
     availableQuizzes.forEach(q => {
         q.questionCount = q.question_count || q.questionCount || 0;
-        q.status = q.status || 'available';
         q.dueDate = q.end_time || q.dueDate || null;
         q.startDate = q.start_time || q.startDate || null;
         q.duration = q.duration || 30;
         q.type = (q.type || 'quiz').toLowerCase();
         q.displayType = q.display_type || (q.type ? (q.type.charAt(0).toUpperCase() + q.type.slice(1)) : 'Quiz');
+        q.taken = q.taken || q.taken_count || 0;
+
+        // If the student already took this quiz, mark as completed first
+        if (q.taken && parseInt(q.taken) > 0) {
+            q.status = 'completed';
+            return; // no further checks needed
+        }
+
+        // Recompute status in the browser using the user's local time to avoid timezone mismatches
+        // Valid statuses: 'upcoming', 'available', 'closed', 'completed'
+        const now = new Date();
+        const startObj = q.startDate ? new Date(q.startDate) : null;
+        const endObj = q.dueDate ? new Date(q.dueDate) : null;
+
+        if (startObj && now < startObj) {
+            q.status = 'upcoming';
+        } else if (endObj && now > endObj) {
+            q.status = 'closed';
+        } else {
+            q.status = q.status || 'available';
+        }
     });
 
     // ===========================

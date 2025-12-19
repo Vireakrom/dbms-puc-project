@@ -3034,13 +3034,15 @@ def student_dashboard():
                 q.subject_id,
                 s.subject_name,
                 q.teacher_id,
-                (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.quiz_id) AS question_count
+                (SELECT COUNT(*) FROM quiz_questions qq WHERE qq.quiz_id = q.quiz_id) AS question_count,
+                -- Has this student already submitted this quiz?
+                (SELECT COUNT(*) FROM quiz_results qr WHERE qr.quiz_id = q.quiz_id AND qr.student_id = :sid) AS taken_count
             FROM quizzes q
             JOIN classes c ON c.class_id = q.class_id
             JOIN subjects s ON s.subject_id = q.subject_id
             WHERE q.class_id = :cid AND q.is_active = 1
             ORDER BY q.start_time DESC
-        """), {"cid": student_row.class_id}).fetchall()
+        """), {"cid": student_row.class_id, "sid": student_row.student_id}).fetchall()
 
         for r in rows:
             duration_minutes = None
@@ -3052,6 +3054,10 @@ def student_dashboard():
                 status = "upcoming"
             if r.end_time and now > r.end_time:
                 status = "closed"
+
+            # If the student already submitted this quiz, mark as completed
+            if getattr(r, 'taken_count', 0) and int(r.taken_count) > 0:
+                status = 'completed'
 
             exam_type = (r.exam_type or "Quiz").strip()
             exam_key = exam_type.lower()
@@ -3069,6 +3075,7 @@ def student_dashboard():
                 "end_time": r.end_time.isoformat() if r.end_time else None,
                 "duration": duration_minutes or 30,
                 "status": status,
+                "taken": int(r.taken_count) if getattr(r, 'taken_count', None) is not None else 0,
                 "percentage_weight": r.percentage_weight or 0,
             })
 
@@ -3116,6 +3123,12 @@ def student_quiz():
         """), {"qid": quiz_id}).fetchone()
 
         if quiz_row and quiz_row.class_id == student_row.class_id:
+            # Prevent reopening a quiz the student already submitted
+            taken = db.session.execute(db.text("SELECT 1 FROM quiz_results WHERE quiz_id = :qid AND student_id = :sid LIMIT 1"), {"qid": quiz_id, "sid": student_row.student_id}).fetchone()
+            if taken:
+                flash("You have already submitted this quiz.", "warning")
+                return redirect(url_for("student_dashboard"))
+
             now = datetime.now()
             if quiz_row.start_time and now < quiz_row.start_time:
                 flash("This quiz is not open yet.", "warning")
@@ -3196,6 +3209,11 @@ def student_submit_quiz(quiz_id):
     if not quiz_row or quiz_row.class_id != student_row.class_id:
         return jsonify({"ok": False, "error": "Quiz not available."}), 404
 
+    # Prevent duplicate submissions (use existing quiz_results table)
+    exists = db.session.execute(db.text("SELECT 1 FROM quiz_results WHERE quiz_id = :qid AND student_id = :sid LIMIT 1"), {"qid": quiz_id, "sid": student_row.student_id}).fetchone()
+    if exists:
+        return jsonify({"ok": False, "error": "Quiz already submitted."}), 400
+
     now = datetime.now()
     if quiz_row.start_time and now < quiz_row.start_time:
         return jsonify({"ok": False, "error": "Quiz not open yet."}), 403
@@ -3261,6 +3279,21 @@ def student_submit_quiz(quiz_id):
             "quiz_score": score_percent
         })
         db.session.commit()
+        # Also mark this quiz as submitted for this student (record in existing quiz_results table)
+        try:
+            db.session.execute(db.text("""
+                INSERT INTO quiz_results (quiz_id, student_id, score, submitted_at)
+                VALUES (:qid, :sid, :score, :time)
+            """), {
+                "qid": quiz_id,
+                "sid": student_row.student_id,
+                "score": score_percent,
+                "time": datetime.utcnow()
+            })
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
         log_activity(user_id, f"Submitted quiz {quiz_id} with score {score_percent}%")
     except Exception as e:
         db.session.rollback()

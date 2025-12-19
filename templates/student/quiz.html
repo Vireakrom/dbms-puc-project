@@ -1262,23 +1262,71 @@
             .then(result => {
                 if (!result.ok || !result.data.ok) {
                     const msg = result.data && result.data.error ? result.data.error : 'Submission failed.';
-                    alert(msg);
+
+                    // Show modal with error
+                    const modalEl = document.getElementById('submissionResultModal');
+                    modalEl.querySelector('.modal-title').textContent = 'Submission failed';
+                    const header = modalEl.querySelector('.modal-header');
+                    header.classList.remove('bg-success', 'text-white');
+                    header.classList.add('bg-danger', 'text-white');
+                    modalEl.querySelector('.modal-body').textContent = msg;
+                    const modalErr = new bootstrap.Modal(modalEl);
+                    modalErr.show();
+                    document.getElementById('btnSubmissionOk').onclick = () => {
+                        modalErr.hide();
+                    };
+
                     return;
                 }
 
                 const r = result.data;
-                alert(`Quiz submitted successfully!\n\nYour Score: ${r.score}%\nCorrect Answers: ${r.correct}/${r.total}\nGrade: ${r.grade}`);
-                window.location.href = '/student';
+
+                // Populate and show result modal (success)
+                const modalEl = document.getElementById('submissionResultModal');
+                modalEl.querySelector('.modal-title').textContent = 'Quiz submitted successfully!';
+                const header = modalEl.querySelector('.modal-header');
+                header.classList.remove('bg-danger', 'text-white');
+                header.classList.add('bg-success', 'text-white');
+                modalEl.querySelector('.modal-body').innerHTML = `
+                    <p>Your Score: <strong>${r.score}%</strong></p>
+                    <p>Correct Answers: <strong>${r.correct}/${r.total}</strong></p>
+                    <p>Grade: <strong>${r.grade}</strong></p>
+                `;
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                document.getElementById('btnSubmissionOk').onclick = () => {
+                    // Allow navigation without showing the "unsaved changes" confirmation
+                    suppressBeforeUnload = true;
+                    const qc = document.getElementById('quiz-container');
+                    if (qc) qc.classList.remove('section-visible');
+
+                    modal.hide();
+                    window.location.href = '/student';
+                };
             })
             .catch(() => {
-                alert('Unexpected error submitting quiz.');
+                const modalEl = document.getElementById('submissionResultModal');
+                modalEl.querySelector('.modal-title').textContent = 'Submission failed';
+                const header = modalEl.querySelector('.modal-header');
+                header.classList.remove('bg-success', 'text-white');
+                header.classList.add('bg-danger', 'text-white');
+                modalEl.querySelector('.modal-body').textContent = 'Unexpected error submitting quiz.';
+                const modalErr = new bootstrap.Modal(modalEl);
+                modalErr.show();
+                document.getElementById('btnSubmissionOk').onclick = () => {
+                    modalErr.hide();
+                };
             });
     }
 
     // ===========================
     // PREVENT ACCIDENTAL NAVIGATION
     // ===========================
+    // When true, bypass the confirmation (e.g., after successful submit)
+    let suppressBeforeUnload = false;
+
     window.addEventListener('beforeunload', function (e) {
+        if (suppressBeforeUnload) return;
         if (document.getElementById('quiz-container').classList.contains('section-visible')) {
             e.preventDefault();
             e.returnValue = 'You have an active quiz. Are you sure you want to leave?';
@@ -1297,5 +1345,26 @@
         populateIntroPage();
     });
 </script>
+
+<!-- Submission Result Modal -->
+<div class="modal fade" id="submissionResultModal" tabindex="-1" aria-labelledby="submissionResultModalLabel"
+    aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="submissionResultModalLabel">Result</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Filled dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="btnSubmissionOk">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 {% endblock %}
