@@ -434,6 +434,7 @@ def admin_report():
             tr.result_id,
             tr.test_date,
             tr.quiz_score,
+            tr.total_score,
             tr.grade,
             tr.student_id,
             tr.class_id,
@@ -477,8 +478,19 @@ def admin_report():
 
     rows = db.session.execute(query, params).fetchall()
 
-    # Summary metrics
-    scores = [float(r.quiz_score) for r in rows if r.quiz_score is not None]
+    # Summary metrics (prefer tr.total_score when available; fall back to tr.quiz_score)
+    scores = []
+    for r in rows:
+        if getattr(r, 'total_score', None) is not None:
+            try:
+                scores.append(float(r.total_score))
+            except (TypeError, ValueError):
+                continue
+        elif getattr(r, 'quiz_score', None) is not None:
+            try:
+                scores.append(float(r.quiz_score))
+            except (TypeError, ValueError):
+                continue
     total_results = len(scores)
     total_students = len({r.student_id for r in rows})
     average_score = round(sum(scores) / total_results, 1) if total_results else 0.0
@@ -486,6 +498,37 @@ def admin_report():
     top_performers = sum(1 for s in scores if s >= 90)
     need_support = sum(1 for s in scores if s < 60)
     pass_rate = round((pass_count / total_results) * 100, 1) if total_results else 0.0
+
+    # Grade distribution buckets (based on the same score list)
+    dist_buckets = {
+        "A (90-100)": {"count": 0, "color": "#10b981", "min": 90},
+        "B (80-89)": {"count": 0, "color": "#3b82f6", "min": 80},
+        "C (70-79)": {"count": 0, "color": "#f59e0b", "min": 70},
+        "D (60-69)": {"count": 0, "color": "#f97316", "min": 60},
+        "F (<60)": {"count": 0, "color": "#ef4444", "min": 0},
+    }
+    for s in scores:
+        if s >= 90:
+            dist_buckets["A (90-100)"]["count"] += 1
+        elif s >= 80:
+            dist_buckets["B (80-89)"]["count"] += 1
+        elif s >= 70:
+            dist_buckets["C (70-79)"]["count"] += 1
+        elif s >= 60:
+            dist_buckets["D (60-69)"]["count"] += 1
+        else:
+            dist_buckets["F (<60)"]["count"] += 1
+
+    grade_distribution = []
+    for label, info in dist_buckets.items():
+        count = info["count"]
+        percent = round((count / total_results) * 100, 1) if total_results else 0
+        grade_distribution.append({
+            "label": label,
+            "percent": percent,
+            "count": count,
+            "color": info["color"],
+        })
 
     # Grade distribution buckets
     dist_buckets = {
@@ -518,38 +561,72 @@ def admin_report():
             "color": info["color"],
         })
 
-    # Subject-wise averages
+    # Subject-wise averages (prefer total_score when present)
     subject_scores = {}
     for r in rows:
-        if r.quiz_score is None:
+        score_val = None
+        if getattr(r, 'total_score', None) is not None:
+            try:
+                score_val = float(r.total_score)
+            except (TypeError, ValueError):
+                score_val = None
+        elif getattr(r, 'quiz_score', None) is not None:
+            try:
+                score_val = float(r.quiz_score)
+            except (TypeError, ValueError):
+                score_val = None
+        if score_val is None:
             continue
-        subject_scores.setdefault(r.subject_name or "Unknown", []).append(float(r.quiz_score))
+        subject_scores.setdefault(r.subject_name or "Unknown", []).append(score_val)
     subject_averages = {
         k: round(sum(v) / len(v), 1)
         for k, v in subject_scores.items()
     }
 
-    # Performance trend by grade level
+    # Performance trend by grade level (prefer total_score when present)
     grade_scores = {}
     for r in rows:
-        if r.quiz_score is None:
+        score_val = None
+        if getattr(r, 'total_score', None) is not None:
+            try:
+                score_val = float(r.total_score)
+            except (TypeError, ValueError):
+                score_val = None
+        elif getattr(r, 'quiz_score', None) is not None:
+            try:
+                score_val = float(r.quiz_score)
+            except (TypeError, ValueError):
+                score_val = None
+        if score_val is None:
             continue
         key = f"Grade {r.grade_level}" if r.grade_level else "Ungraded"
-        grade_scores.setdefault(key, []).append(float(r.quiz_score))
+        grade_scores.setdefault(key, []).append(score_val)
 
     performance_trend = {
         "labels": list(grade_scores.keys()),
         "values": [round(sum(vals) / len(vals), 1) for vals in grade_scores.values()],
     }
 
-    # Sample results table data (latest 50)
+    # Sample results table data (latest 50) — show total_score when available
     sample_results = []
     for r in rows[:50]:
-        score_val = float(r.quiz_score) if r.quiz_score is not None else None
+        if getattr(r, 'total_score', None) is not None:
+            try:
+                score_val = float(r.total_score)
+            except (TypeError, ValueError):
+                score_val = None
+        elif getattr(r, 'quiz_score', None) is not None:
+            try:
+                score_val = float(r.quiz_score)
+            except (TypeError, ValueError):
+                score_val = None
+        else:
+            score_val = None
+
         grade_val = r.grade if r.grade is not None else score_val
         remarks = "Excellent" if score_val is not None and score_val >= 90 else "Needs support" if score_val is not None and score_val < 60 else "Good"
         sample_results.append({
-            "student_id": f"#STU{r.student_id:03d}",
+            "student_id": r.student_id,
             "name": r.full_name or r.username,
             "class_name": r.class_name or "N/A",
             "subject": r.subject_name or "N/A",
