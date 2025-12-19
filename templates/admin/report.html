@@ -364,10 +364,6 @@
             <button type="button" class="btn-generate" onclick="generateReport()">
                 <i class="bi bi-bar-chart-fill"></i> Generate Report
             </button>
-
-            <button type="button" class="btn-export" onclick="exportReport()">
-                <i class="bi bi-download"></i> Export PDF
-            </button>
         </div>
     </form>
 </div>
@@ -718,14 +714,7 @@
         window.location.href = '/admin/report?' + params.toString();
     }
 
-    // Export Report Function
-    function exportReport() {
-        alert('Export to PDF functionality will be implemented soon.\nThis will generate a comprehensive PDF report with all charts and data.');
-
-        // TODO: Implement PDF export when you add the export route
-        // const params = new URLSearchParams(window.location.search);
-        // window.location.href = '/admin/report/export?format=pdf&' + params.toString();
-    }
+    // Export Report removed — feature not implemented yet.
 </script>
 
 {% endblock %}
